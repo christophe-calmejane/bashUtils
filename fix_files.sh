@@ -5,13 +5,11 @@ FIX_FILES_VERSION="1.6"
 echo "Fix-Files version $FIX_FILES_VERSION"
 echo ""
 
-# Check bash version
-if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 1) ]]; then
-  echo "bash 4.1 or later required"
-  exit 255
-fi
+# Get absolute folder for this script
+selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
 
-# currentFolderAbsolute="$(cd "$2"; pwd -P)/"
+# Include util functions
+. "${selfFolderPath}utils.sh"
 
 # Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
 if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
@@ -66,7 +64,7 @@ function applyFileAttributes()
 	local attribs="$2"
 	
 	echo "Setting file attributes for all $filePattern files"
-	find . -iname "$filePattern" -not -path "./3rdparty/*" -not -path "./externals/*" -not -path "./_*" -exec chmod "$attribs" {} \;
+	find . -iname "$filePattern" -not -path "./3rdparty/*" -not -path "./externals/*" -not -path "./_*" -exec chmod -f "$attribs" {} \;
 }
 
 function applyLineEndings()
@@ -122,7 +120,7 @@ if [ $do_chmod -eq 1 ]; then
 	which chmod &> /dev/null
 	if [ $? -eq 0 ]; then
 		# Text/source files (non-executable)
-		chmod a-x .gitignore .gitmodules COPYING COPYING.LESSER
+		chmod -f a-x .clang-format .editorconfig .gitattributes .gitignore .gitmodules COPYING COPYING.LESSER LICENSE
 		applyFileAttributes "*.[chi]pp" "a-x"
 		applyFileAttributes "*.[ch]" "a-x"
 		applyFileAttributes "*.mm" "a-x"

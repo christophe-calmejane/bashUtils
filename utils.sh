@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Utility bash functions
 
+# Check bash version
+if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 1) ]]; then
+  echo "bash 4.1 or later required"
+  exit 255
+fi
+
 getOutputFolder()
 {
 	local _retval="$1"
@@ -34,6 +40,64 @@ getFileSize()
 		result=$(stat -c%s "$filePath")
 	fi
 
+	eval $_retval="'${result}'"
+}
+
+getFileAbsolutePath()
+{
+	local _retval="$1"
+	local _file_path_name="${2##*/}"
+	local _file_path_folder="${2%/*}"
+	if [[ "${_file_path_name}" == "${_file_path_folder}" ]]; then # In case the path specified is directly the file name (=empty relative path)
+		_file_path_folder="."
+	fi
+	local _file_path_abs_folder="`cd "${_file_path_folder}"; pwd`/" # Trick to get absolute path
+
+	eval $_retval="'${_file_path_abs_folder}${_file_path_name}'"
+}
+
+getFolderAbsolutePath()
+{
+	local _retval="$1"
+	local result="$2"
+	
+	if [ -d "$2" ]; then
+		result="$(cd "$2"; pwd -P)/"
+	else
+		result="$2"
+	fi
+	
+	eval $_retval="'${result}'"
+}
+
+getFolderAbsoluteOSDependantPath()
+{
+	local _retval="$1"
+	local result="$2"
+	
+	if isCygwin; then
+		result="$(cygpath -a -w "$2")\\"
+	elif isWindows; then
+		result="$({ cd "$2" && pwd -W; } | sed 's|/|\\|g')\\"
+	else
+		result="$(cd "$2"; pwd -P)/"
+	fi
+	
+	eval $_retval="'${result}'"
+}
+
+getExistingFolders()
+{
+	local _retval="$1"
+	local result=""
+	local inputList="$2"
+	
+	for i in $inputList; do
+		if [ -d "$i" ]; then
+			result="$result $i"
+		fi
+	done
+	
 	eval $_retval="'${result}'"
 }
 
@@ -125,5 +189,46 @@ getCcArch()
 	fi
 
 	eval $_retval="'$($ccCommand -dumpmachine)'"
+}
+
+getUserName()
+{
+	local _retval="$1"
+	local result="$USER"
+	
+	if [ -z $result ]; then
+		result="$USERNAME"
+	fi
+
+	eval $_retval="'${result}'"
+}
+
+getCommandPath()
+{
+	local result=$(which "$1" 2> /dev/null)
+	if [ -z "$result" ]; then
+		echo ""
+	else
+		echo $result
+	fi
+}
+
+# Check if specified git ref exists - Returns 0 if it exists
+doesRefExist()
+{
+	git rev-parse --verify "$1" &> /dev/null
+}
+
+getCurrentGitRef()
+{
+	local _retval="$1"
+	local result="$(git rev-parse --abbrev-ref HEAD 2>&1)"
+
+	# Check if we are on a detached head
+	if [[ $result == HEAD ]]; then
+		result="$(git rev-parse --short HEAD 2>&1)"
+	fi
+	
+	eval $_retval="'${result}'"
 }
 
