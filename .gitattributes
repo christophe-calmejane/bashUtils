@@ -1,0 +1,6 @@
+[attr]text_lf text eol=lf
+[attr]text_crlf text eol=crlf
+
+*.md			text_lf
+*.sh			text_lf
+
