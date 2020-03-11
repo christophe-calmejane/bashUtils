@@ -50,7 +50,7 @@ printHelp()
 	echo "Usage: notarize_binary.sh <Binary Path> <User Name> <Password> <Notarization Bundle Identifier>"
 }
 
-if [ $# -ne 6 ]; then
+if [ $# -ne 4 ]; then
 	echo "ERROR: Missing parameters"
 	printHelp
 	exit 1
