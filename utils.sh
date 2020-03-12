@@ -2,10 +2,50 @@
 # Utility bash functions
 
 # Check bash version
-if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 1) ]]; then
-  echo "bash 4.1 or later required"
+if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 3) ]]; then
+  echo "bash 4.3 or later required"
   exit 255
 fi
+
+parseFile()
+{
+	local configFile="$1"
+	declare -a allowedOptions=("${!2}")
+	declare -n _params="$3"
+
+	if [ ! -f "$configFile" ]; then
+		return
+	fi
+
+	while IFS=$'\r\n' read -r -a line || [ -n "$line" ]; do
+		# Only process lines with something
+		if [ "${line}" != "" ]; then
+			IFS='=' read -a lineSplit <<< "${line}"
+
+			local key="${lineSplit[0]}"
+			local value="${lineSplit[1]}"
+
+			# Don't parse commented lines
+			if [ "${key:0:1}" = "#" ]; then
+				continue
+			fi
+
+			local found=0
+			for opt in "${allowedOptions[@]}"
+			do
+				if [ "$opt" = "$key" ]; then
+					_params["$key"]="$value"
+					found=1
+				fi
+			done
+
+			if [ $found -eq 0 ];
+			then
+				echo "Ignoring unknown key '$key' in '${configFile}' file"
+			fi
+		fi
+	done < "${configFile}"
+}
 
 getOutputFolder()
 {
