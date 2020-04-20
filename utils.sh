@@ -47,6 +47,16 @@ parseFile()
 	done < "${configFile}"
 }
 
+isSingleConfigurationGenerator()
+{
+	local generator="$1"
+	if [[ "$generator" == "Unix Makefiles" || "$generator" == "Ninja" ]]; then
+		return 0
+	fi
+	return 1
+}
+
+# Compute a CMake output folder based on OS, arch, toolset, build configuration, generator
 getOutputFolder()
 {
 	local _retval="$1"
@@ -54,14 +64,19 @@ getOutputFolder()
 	local arch="$3"
 	local toolset="$4"
 	local config="$5"
+	local generator="$6"
 	local result=""
 
-	if isMac; then
-		result="${basePath}_${arch}"
-	elif isWindows; then
-		result="${basePath}_${arch}_${toolset}"
+	result="${basePath}_${arch}"
+
+	# For Single-Configuration generators, always append build configuration
+	if isSingleConfigurationGenerator "$generator"; then
+		result="${result}_${config,,}"
 	else
-		result="${basePath}_${arch}_${config}"
+		# For Windows, append the toolset
+		if isWindows; then
+			result="${result}_${toolset}"
+		fi
 	fi
 
 	eval $_retval="'${result}'"
