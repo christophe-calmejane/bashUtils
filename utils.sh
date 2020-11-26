@@ -61,22 +61,23 @@ getOutputFolder()
 {
 	local _retval="$1"
 	local basePath="$2"
-	local arch="$3"
-	local toolset="$4"
-	local config="$5"
-	local generator="$6"
+	local os="$3"
+	local arch="$4"
+	local toolset="$5"
+	local config="$6"
+	local generator="$7"
 	local result=""
 
-	result="${basePath}_${arch}"
+	result="${basePath}_${os}_${arch}"
+
+	# Append the toolset
+	if [ ! -z "${toolset}" ]; then
+		result="${result}_${toolset}"
+	fi
 
 	# For Single-Configuration generators, always append build configuration
 	if isSingleConfigurationGenerator "$generator"; then
 		result="${result}_${config,,}"
-	else
-		# For Windows, append the toolset
-		if isWindows; then
-			result="${result}_${toolset}"
-		fi
 	fi
 
 	eval $_retval="'${result}'"
@@ -230,7 +231,7 @@ isCygwin()
 	return 1
 }
 
-getCcArch()
+getMachineArch()
 {
 	local _retval="$1"
 	
@@ -243,7 +244,29 @@ getCcArch()
 		ccCommand="$CC"
 	fi
 
-	eval $_retval="'$($ccCommand -dumpmachine)'"
+	local result="$($ccCommand -dumpmachine)"
+	result="${result%%-*}"
+	case "$result" in
+		i386)
+			result="x86"
+			;;
+		i486)
+			result="x86"
+			;;
+		i586)
+			result="x86"
+			;;
+		i686)
+			result="x86"
+			;;
+		x86_64)
+			result="x64"
+			;;
+		*)
+			echo "Unknown Machine Arch: $result (add support for it in getMachineArch function)"
+			exit 1
+	esac
+	eval $_retval="'${result}'"
 }
 
 getUserName()
