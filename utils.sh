@@ -7,6 +7,18 @@ if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]}
   exit 255
 fi
 
+# Parses an options file and fill an array with all options found.
+# parseFile <file path> <list of allowed options> <associative array to be filled, possibly pre-initialized with default values>
+#
+# Options in the file must be in the format key=value
+# Lines starting with a # are comment lines and ignored
+#
+# Ex:
+# declare -A params=()
+# declare -a knownOptions=("opt1" "opt2")
+# params["opt1"]="" # Default value empty
+# params["opt2"]="My Default" # Default value set
+# parseFile "${configFile}" knownOptions[@] params
 parseFile()
 {
 	local configFile="$1"
