@@ -59,6 +59,34 @@ parseFile()
 	done < "${configFile}"
 }
 
+getGeneratorShortName()
+{
+	local _retval="$1"
+	local generator="$2"
+	local result=""
+
+	case "$generator" in
+		"Unix Makefiles")
+			result="makefiles"
+			;;
+		Ninja)
+			result="ninja"
+			;;
+		Xcode)
+			result="xcode"
+			;;
+		"Visual Studio "*)
+			result="vs"
+			;;
+		*)
+			result="${generator}"
+			exit 4
+			;;
+	esac
+
+	eval $_retval="'${result}'"
+}
+
 isSingleConfigurationGenerator()
 {
 	local generator="$1"
@@ -81,6 +109,11 @@ getOutputFolder()
 	local result=""
 
 	result="${basePath}_${os}_${arch}"
+
+	# Append the generator short name
+	local shortName=""
+	getGeneratorShortName	shortName "$generator"
+	result="${result}_${shortName}"
 
 	# Append the toolset
 	if [ ! -z "${toolset}" ]; then
