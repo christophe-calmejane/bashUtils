@@ -307,6 +307,12 @@ getMachineArch()
 		x86_64)
 			result="x64"
 			;;
+		arm)
+			result="arm"
+			;;
+		arm64)
+			result="arm64"
+			;;
 		*)
 			echo "Unknown Machine Arch: $result (add support for it in getMachineArch function)"
 			exit 1
