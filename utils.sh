@@ -2,8 +2,8 @@
 # Utility bash functions
 
 # Check bash version
-if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 3) ]]; then
-  echo "bash 4.3 or later required"
+if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 4) ]]; then
+  echo "bash 4.4 or later required"
   exit 255
 fi
 
