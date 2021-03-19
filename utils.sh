@@ -2,7 +2,7 @@
 # Utility bash functions
 
 # Check bash version
-if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 4) ]]; then
+if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 3) ]]; then
   echo "bash 4.4 or later required"
   exit 255
 fi
@@ -219,7 +219,8 @@ getOS()
 			;;
 		linux*)
 			# We have to check for WSL
-			if [[ `uname -r` == *"Microsoft"* ]]; then
+			local regex="*[Mm]icrosoft*"
+			if [[ `uname -r` == $regex ]]; then
 				result="win"
 			else
 				result="linux"
