@@ -72,6 +72,9 @@ getGeneratorShortName()
 		Ninja)
 			result="ninja"
 			;;
+		Fastbuild)
+			result="fastbuild"
+			;;
 		Xcode)
 			result="xcode"
 			;;
@@ -90,7 +93,7 @@ getGeneratorShortName()
 isSingleConfigurationGenerator()
 {
 	local generator="$1"
-	if [[ "$generator" == "Unix Makefiles" || "$generator" == "Ninja" ]]; then
+	if [[ "$generator" == "Unix Makefiles" || "$generator" == "Ninja" || "$generator" == "Fastbuild" ]]; then
 		return 0
 	fi
 	return 1
