@@ -1,0 +1,42 @@
+# This is a sample configuration file for YourApp Installer build
+# Rename this file to .config
+
+################ Signing
+# Signing identity to be used, run './gen_cmake.sh -ids' to get the list of valid identities on this computer (copy the printed identity without adding quotes)
+#identity=
+
+# Windows signtool options (defaults to '/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256')
+#signtool_options=/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256
+
+################ macOS Notarization
+# Notarization username, defaults to "" which will not notarize
+#notarization_username=
+
+# Notarization password, defaults to "@keychain:AC_PASSWORD" which will use the password stored in the keychain
+#notarization_password=@keychain:AC_PASSWORD
+
+################ Automatic check for update
+# Define to true if Sparkle is to be used, false otherwise
+use_appcast=true
+
+# Appcast URL for YourApp Releases - Only use https URLs (except for debugging when using localhost)
+appcast_releases=https://www.yourdomain.com/YourApp/appcast-release.xml
+
+# Appcast URL for YourApp Betas - Only use https URLs (except for debugging when using localhost)
+appcast_betas=https://www.yourdomain.com/YourApp/appcast-beta.xml
+
+# Fallback appcast URL for YourApp Releases, in case main URL doesn't work - Only use https URLs (except for debugging when using localhost)
+appcast_releases_fallback=https://www.yourdomain.com/YourApp/appcast-release.xml
+
+# Fallback appcast URL for YourApp Betas, in case main URL doesn't work - Only use https URLs (except for debugging when using localhost)
+appcast_betas_fallback=https://www.yourdomain.com/YourApp/appcast-beta.xml
+
+################ Debug Symbols
+# Windows symstore.exe location (cygwin, mixed or windows path style ; Don't use quotes) - Can be a network path
+#symbols_symstore_path=c:/Program Files (x86)/Windows Kits/10/Debuggers/x86/symstore.exe
+
+# Windows Symbols Server location (cygwin, mixed or windows path style ; Don't use quotes) - Can be a network path
+#symbols_windows_pdb_server_path=\\\\sambaServer\\sambaShare\\full\\path
+
+# MacOS Symbols Server location (unix path style ; Don't use quotes)
+#symbols_macos_dsym_server_path=/full/path
