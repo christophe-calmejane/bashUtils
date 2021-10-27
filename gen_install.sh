@@ -18,7 +18,7 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 . "${selfFolderPath}utils.sh"
 
 # Include config file functions
-. "${selfFolderPath}loadConfigFile.sh"
+. "${selfFolderPath}load_config_file.sh"
 
 # Sanity checks
 if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 1) ]];

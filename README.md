@@ -1,11 +1,31 @@
 # Bash Utils
-Copyright (C) 2020, Christophe Calmejane
+Copyright (C) 202021, Christophe Calmejane
 
-## What is it?
+# What is it?
 
 Bash Utils is a collection of bash scripts designed to improve developers productivity.
 
-### notarize_binary.sh
+## Directly callable scripts
+
+Scripts designed to be called directly from the command line.
+
+## fix_files.sh
+
+Script to batch process files, correcting them (chmod, end of line, clang-format).
+
+## list_includes.sh
+
+Script to list includes files to generate a PCH file.
+
+## update_copyright.sh
+
+Script to update the copyright year of files.
+
+# Indirectly callbable scripts
+
+Scripts designed to be called from another script.
+
+## notarize_binary.sh
 
 Script to automate Apple Notarization process.
 
@@ -22,3 +42,19 @@ You will first have to generate an app-specific password:
 - `<User Name>` is _YourAppleID_
 - `<Password>` is "@keychain:AC_PASSWORD"
 - `<Notarization Bundle Identifier>` is any bundle identifier you want (might be different than the actual application)
+
+## gen_cmake.sh
+
+Script to generate a CMake solution.
+
+## gen_install.sh
+
+Script to generate a product installer.
+
+## load_config_file.sh
+
+Script to load and parse a config file.
+
+## utils.sh
+
+Set of useful bash functions.
