@@ -311,6 +311,10 @@ do
 	shift
 done
 
+if [[ $(type -t extend_gc_fnc_postparse) == function ]]; then
+	extend_gc_fnc_postparse
+fi
+
 if [ ! -z "$cmake_generator" ]; then
 	echo "Overriding default cmake generator ($generator) with: $cmake_generator"
 	generator="$cmake_generator"
