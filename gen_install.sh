@@ -501,7 +501,7 @@ if [ -z $projectName ]; then
 	projectName="${projectName/#la_/}"
 fi
 
-cmakeVersion=$(grep -Po "set *\(.+_VERSION +\K[0-9]+(\.[0-9]+)+(?= *\))" CMakeLists.txt)
+cmakeVersion=$(grep -m 1 -Po "set *\(.+_VERSION +\K[0-9]+(\.[0-9]+)+(?= *\))" CMakeLists.txt)
 if [[ $cmakeVersion == "" ]]; then
 	echo "Cannot detect project version"
 	exit 1
@@ -514,7 +514,7 @@ IFS='.' read -a versionSplit <<< "$cmakeVersion"
 IFS="$oldIFS"
 
 if [[ ${#versionSplit[*]} -lt 3 || ${#versionSplit[*]} -gt 4 ]]; then
-	echo "Invalid project version (should be in the form x.y.z[.w])"
+	echo "Invalid project version (should be in the form x.y.z[.w]): $cmakeVersion"
 	exit 1
 fi
 
