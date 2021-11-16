@@ -263,15 +263,17 @@ do
 			toolset=""
 			toolchain="clang"
 			platform="android"
+			androidSdkVersion="24"
 			default_arch="arm64" # Setting default arch for cross-compilation
 			supportedArchs+=("arm")
 			supportedArchs+=("arm64")
 			add_cmake_opt+=("-DCMAKE_SYSTEM_NAME=Android")
+			add_cmake_opt+=("-DCMAKE_SYSTEM_VERSION=android-${androidSdkVersion}")
 			add_cmake_opt+=("-DANDROID_TOOLCHAIN=${toolchain}")
 			add_cmake_opt+=("-DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME")
 			add_cmake_opt+=("-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake")
-			add_cmake_opt+=("-DCMAKE_ANDROID_STL_TYPE=gnustl_static")
-			add_cmake_opt+=("-DANDROID_NATIVE_API_LEVEL=24")
+			add_cmake_opt+=("-DCMAKE_ANDROID_STL_TYPE=c++_static")
+			add_cmake_opt+=("-DANDROID_PLATFORM=android-${androidSdkVersion}")
 			;;
 		-arch)
 			shift
