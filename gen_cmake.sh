@@ -78,11 +78,13 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		-h)
-			echo "Usage: gen_cmake.sh [options]"
+			echo "Usage: gen_cmake.sh [options] -- [cmake options]"
+			echo "Everything passed after -- will be passed directly to the cmake command"
+			echo "Available options:"
 			echo " -h -> Display this help"
 			echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
 			echo " -f <flags> -> Force all cmake flags (Default: $cmake_opt)"
-			echo " -a <flags> -> Add cmake flags to default ones (or to forced ones with -f option)"
+			echo " -a <flag> -> Append specified cmake flag to default ones (or to forced ones with -f option). Alternatively use -- if many flags are to be passed, to avoid many -a options"
 			echo " -b <cmake path> -> Force cmake binary path (Default: $cmake_path)"
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
 			echo " -arch <arch> -> Set target architecture (Default: $default_arch). Supported archs depends on target platform"
@@ -131,11 +133,7 @@ do
 				echo "ERROR: Missing parameter for -a option, see help (-h)"
 				exit 4
 			fi
-			IFS=' ' read -r -a tokens <<< "$1"
-			for token in ${tokens[@]}
-			do
-				add_cmake_opt+=("$token")
-			done
+			add_cmake_opt+=("$1")
 			;;
 		-b)
 			shift
@@ -294,6 +292,15 @@ do
 			;;
 		-asan)
 			add_cmake_opt+=("-DCU_ENABLE_ASAN=TRUE")
+			;;
+		--)
+			shift
+			while [ $# -gt 0 ]
+			do
+				add_cmake_opt+=("$1")
+				shift
+			done
+			break
 			;;
 		*)
 			consumed_args=0
