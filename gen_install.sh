@@ -6,7 +6,7 @@
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.0"
+GeneratorVersion="5.1"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
@@ -199,6 +199,7 @@ outputFolder=""
 buildConfig="Release"
 buildConfigOverride=0
 doCleanup=1
+doRebuild=1
 doSign=1
 doSym=1
 gen_cmake_additional_options=()
@@ -220,6 +221,7 @@ do
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
 			echo " -arch <arch> -> Set target architecture (Default: $default_arch). Supported archs depends on target platform"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
+			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
 			if isWindows; then
 				echo " -t <visual toolset> -> Force visual toolset (Default: $toolset)"
 				echo " -tc <visual toolchain> -> Force visual toolchain (Default: $toolchain)"
@@ -280,6 +282,9 @@ do
 			;;
 		-no-clean)
 			doCleanup=0
+			;;
+		-no-rebuild)
+			doRebuild=0
 			;;
 		-t)
 			if isWindows; then
@@ -568,7 +573,11 @@ echo "done"
 
 pushd "${outputFolder}" &> /dev/null
 echo -n "Building project... "
-log=$("$cmake_path" --build . -j 4 --clean-first --config "${buildConfig}" --target install)
+rebuildOption="--clean-first"
+if [ $doRebuild -eq 0 ]; then
+	rebuildOption=""
+fi
+log=$("$cmake_path" --build . -j 4 ${rebuildOption} --config "${buildConfig}" --target install)
 if [ $? -ne 0 ]; then
 	echo "Failed to build project ;("
 	echo ""
