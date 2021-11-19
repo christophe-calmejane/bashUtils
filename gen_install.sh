@@ -203,6 +203,7 @@ doRebuild=1
 doSign=1
 doSym=1
 gen_cmake_additional_options=()
+cmake_additional_options=()
 if [ -z $default_keyDigits ]; then
 	default_keyDigits=2
 fi
@@ -245,8 +246,7 @@ do
 				echo "ERROR: Missing parameter for -a option, see help (-h)"
 				exit 4
 			fi
-			gen_cmake_additional_options+=("-a")
-			gen_cmake_additional_options+=("$1")
+			cmake_additional_options+=("$1")
 			;;
 		-b)
 			shift
@@ -437,29 +437,26 @@ if [ ${params["use_appcast"]} = true ]; then
 		echo "ERROR: appcast_releases must not be empty in ${configFile} file"
 		exit 4
 	fi
-	gen_cmake_additional_options+=("-a")
-	gen_cmake_additional_options+=("-DAPPCAST_RELEASES_URL=${params["appcast_releases"]}")
+	cmake_additional_options+=("-DAPPCAST_RELEASES_URL=${params["appcast_releases"]}")
 
 	if [ "x${params["appcast_betas"]}" == "x" ]; then
 		echo "ERROR: appcast_betas must not be empty in ${configFile} file"
 		exit 4
 	fi
-	gen_cmake_additional_options+=("-a")
-	gen_cmake_additional_options+=("-DAPPCAST_BETAS_URL=${params["appcast_betas"]}")
+	cmake_additional_options+=("-DAPPCAST_BETAS_URL=${params["appcast_betas"]}")
 
 	if [ "x${params["appcast_releases_fallback"]}" != "x" ]; then
-		gen_cmake_additional_options+=("-a")
-		gen_cmake_additional_options+=("-DAPPCAST_RELEASES_FALLBACK_URL=${params["appcast_releases_fallback"]}")
+		cmake_additional_options+=("-DAPPCAST_RELEASES_FALLBACK_URL=${params["appcast_releases_fallback"]}")
 	fi
 
 	if [ "x${params["appcast_betas_fallback"]}" != "x" ]; then
-		gen_cmake_additional_options+=("-a")
-		gen_cmake_additional_options+=("-DAPPCAST_BETAS_FALLBACK_URL=${params["appcast_betas_fallback"]}")
+		cmake_additional_options+=("-DAPPCAST_BETAS_FALLBACK_URL=${params["appcast_betas_fallback"]}")
 	fi
 fi
 
 # Build marketing options
-marketing_options="-DMARKETING_VERSION_DIGITS=${key_digits} -DMARKETING_VERSION_POSTFIX=${key_postfix}"
+cmake_additional_options+=("-DMARKETING_VERSION_DIGITS=${key_digits}")
+cmake_additional_options+=("-DMARKETING_VERSION_POSTFIX=${key_postfix}")
 
 if [ ! -z "$cmake_generator" ]; then
 	echo "Overriding default cmake generator ($generator) with: $cmake_generator"
@@ -560,9 +557,11 @@ if [ -f *"${fullInstallerName}" ]; then
 	exit 1
 fi
 
+cmake_additional_options+=("-DCU_INSTALLER_NAME=${installerBaseName}")
+
 # Compilation stuff
 echo -n "Generating cmake files... "
-log=$(./gen_cmake.sh -o "${outputFolder}" -a "-DCU_INSTALLER_NAME=${installerBaseName} ${marketing_options}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt")
+log=$(./gen_cmake.sh -o "${outputFolder}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt" -- "${cmake_additional_options[@]}")
 if [ $? -ne 0 ]; then
 	echo "Failed to generate cmake files ;("
 	echo ""
