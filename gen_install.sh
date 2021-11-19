@@ -6,7 +6,7 @@
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.1"
+GeneratorVersion="5.2"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
@@ -209,6 +209,10 @@ if [ -z $default_keyDigits ]; then
 fi
 key_digits=$((10#$default_keyDigits))
 key_postfix=""
+if [ -z $default_betaTagName ]; then
+	default_betaTagName="-beta"
+fi
+betaTagName="${default_betaTagName}"
 
 while [ $# -gt 0 ]
 do
@@ -232,6 +236,7 @@ do
 			echo " -debug -> Compile using Debug configuration (Default: Release)"
 			echo " -key-digits <Number of digits> -> The number of digits to be used as Key for installation, comprised between 0 and 4 (Default: $default_keyDigits)"
 			echo " -key-postfix <Postfix> -> Postfix string to be added to the Key for installation (Default: "")"
+			echo " -beta-tag <BetaTag> -> Set the beta tag to use before the 4th digit (Default: $default_betaTagName)"
 			if [[ $(type -t extend_gi_fnc_help) == function ]]; then
 				extend_gi_fnc_help
 			fi
@@ -362,6 +367,15 @@ do
 				exit 4
 			fi
 			key_postfix="$1"
+			;;
+		-beta-tag)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -beta-tag option, see help (-h)"
+				exit 4
+			fi
+			betaTagName="$1"
+			cmake_additional_options+=("-DCU_BETA_TAG=${betaTagName}")
 			;;
 		*)
 			consumed_args=0
@@ -526,7 +540,7 @@ is_release=1
 releaseVersion="${versionSplit[0]}.${versionSplit[1]}.${versionSplit[2]}"
 internalVersion="$((${versionSplit[0]} * 1000000 + ${versionSplit[1]} * 1000 + ${versionSplit[2]}))"
 if [ ${#versionSplit[*]} -eq 4 ]; then
-	beta_tag="-beta${versionSplit[3]}"
+	beta_tag="${betaTagName}${versionSplit[3]}"
 	build_tag="+$(git rev-parse --short HEAD)"
 	is_release=0
 	internalVersion="${internalVersion}.${versionSplit[3]}"
