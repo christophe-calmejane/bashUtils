@@ -492,9 +492,9 @@ trap 'cleanup_main $?' EXIT
 # Cleanup previous build folders, just in case
 rm -rf "${selfFolderPath}${outputFolder}"
 
-if [ -z $projectName ]; then
+if [ -z "$projectName" ]; then
 	# Get project name
-	projectName="$(grep -Po "project *\( *\K[^ )]+" "CMakeLists.txt")"
+	projectName="$(grep -Po "project *\( *(\K[^\"][^ )]+|\"\K[^\"]+)" "CMakeLists.txt")"
 	if [[ $projectName == "" ]]; then
 		echo "Cannot detect project name"
 		exit 1
@@ -602,7 +602,7 @@ which tar &> /dev/null
 if [ $? -eq 0 ]; then
 	symbolsFile="${installerBaseName}-symbols.tgz"
 	echo -n "Archiving symbols... "
-	log=$(tar cvzf "${symbolsFile}" ${outputFolder}/Symbols)
+	log=$(tar cvzf "${symbolsFile}" "${outputFolder}"/Symbols)
 	if [ $? -ne 0 ]; then
 		echo "Failed to archive symbols ;("
 		echo ""
@@ -612,7 +612,7 @@ if [ $? -eq 0 ]; then
 	echo "done"
 fi
 
-installerFile=$(ls ${outputFolder}/*${fullInstallerName})
+installerFile=$(ls "${outputFolder}"/*"${fullInstallerName}")
 if [ ! -f "$installerFile" ]; then
 	echo "ERROR: Cannot find installer file in $outputFolder sub folder. Not cleaning it so you can manually search. Symbols have not been deployed either, so you might not want to publish this version."
 	doCleanup=0
