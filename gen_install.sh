@@ -6,7 +6,7 @@
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.2"
+GeneratorVersion="5.3"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
@@ -446,7 +446,7 @@ if [ $doSign -eq 1 ]; then
 fi
 
 # Additional options from .config file
-if [ ${params["use_appcast"]} = true ]; then
+if [ ${params["use_sparkle"]} = true ]; then
 	if [ "x${params["appcast_releases"]}" == "x" ]; then
 		echo "ERROR: appcast_releases must not be empty in ${configFile} file"
 		exit 4
