@@ -17,7 +17,7 @@
 
 ################ Automatic check for update
 # Define to true if Sparkle is to be used, false otherwise
-use_appcast=true
+use_sparkle=true
 
 # Appcast URL for YourApp Releases - Only use https URLs (except for debugging when using localhost)
 appcast_releases=https://www.yourdomain.com/YourApp/appcast-release.xml
