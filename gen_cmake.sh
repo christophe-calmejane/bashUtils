@@ -5,6 +5,7 @@
 #   extend_gc_fnc_help() -> Called when -h is requested. No return value
 #   extend_gc_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 #   extend_gc_fnc_precmake() -> Called just before invoking cmake. The $add_cmake_opt list can be appended. No return value
+#   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
 
 # Get absolute folder for this script
 selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
@@ -506,6 +507,9 @@ if [ ! -z "${toolchain}" ]; then
 fi
 if [ ! -z "${cmake_config}" ]; then
 	echo "| - BUILD TYPE: ${cmake_config}"
+fi
+if [[ $(type -t extend_gc_fnc_props_summary) == function ]]; then
+	extend_gc_fnc_props_summary
 fi
 echo "\\--------------------------/"
 echo ""
