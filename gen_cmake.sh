@@ -78,6 +78,12 @@ signingId=""
 doSign=0
 signtoolOptions="$default_signtoolOptions"
 
+# Override defaults using config file, if loaded
+if [[ ! -z $configFileLoaded && $configFileLoaded -eq 1 ]]; then
+	signingId="${params["identity"]}"
+	signtoolOptions=${params["signtool_options"]}
+fi
+
 while [ $# -gt 0 ]
 do
 	case "$1" in
