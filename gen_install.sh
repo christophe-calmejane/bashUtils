@@ -17,44 +17,11 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 # Include utils functions
 . "${selfFolderPath}utils.sh"
 
+# Sanity checks
+envSanityChecks "grep" "tar"
+
 # Include config file functions
 . "${selfFolderPath}load_config_file.sh"
-
-# Sanity checks
-if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 1) ]];
-then
-	echo "bash 4.1 or later required"
-	if isMac;
-	then
-		echo "Try invoking the script with 'bash $0' instead of just '$0'"
-	fi
-	exit 127
-fi
-if isMac;
-then
-	which tar &> /dev/null
-	if [ $? -ne 0 ];
-	then
-		echo "tar required. Install it via HomeBrew"
-		exit 127
-	fi
-	which grep &> /dev/null
-	if [ $? -ne 0 ];
-	then
-		echo "GNU grep required. Install it via HomeBrew"
-		exit 127
-	fi
-	grep --version | grep BSD &> /dev/null
-	if [ $? -eq 0 ];
-	then
-		echo "GNU grep required (not macOS native grep version). Install it via HomeBrew:"
-		echo " - Install HomeBrew with the following command: /usr/bin/ruby -e \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)\""
-		echo " - Install coreutils and grep with the following command: brew install coreutils grep"
-		echo " - Export brew path with the following command: export PATH=\"\$(brew --prefix coreutils)/libexec/gnubin:\$(brew --prefix grep)/libexec/gnubin:/usr/local/bin:\$PATH\""
-		echo " - Optionally set this path command in your .bashrc"
-		exit 127
-	fi
-fi
 
 # Deploy symbols found in current directory
 deploySymbols()

@@ -365,3 +365,69 @@ getCurrentGitRef()
 	eval $_retval="'${result}'"
 }
 
+printBrewInstallHelp()
+{
+	local moduleName="$1"
+	local formula="$2"
+
+	which brew &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo " - Install HomeBrew with the following command: /usr/bin/ruby -e \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)\""
+		echo " - Export brew path with the following command: export PATH=\"/usr/local/bin:\$PATH\""
+	fi
+	echo " - Install $moduleName with the following command: brew install $formula"
+	echo " - Export $moduleName path with the following command: export PATH=\"\$(brew --prefix $formula)/libexec/gnubin:\$PATH\""
+	echo " - Optionally set this path command in your .bashrc"
+}
+
+envSanityChecks()
+{
+	if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]} < 3) ]];
+	then
+		echo "bash 4.3 or later required"
+		if isMac;
+		then
+			echo "Try invoking the script with 'bash $0' instead of just '$0'"
+		fi
+		exit 127
+	fi
+	if isMac;
+	then
+		for module in "$@"
+		do
+			if [ "$module" == "tar" ];
+			then
+				which tar &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU tar required. Install it via HomeBrew:"
+					printBrewInstallHelp "tar" "gnu-tar"
+					exit 127
+				fi
+				tar --version | grep -i GNU &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU tar required (not macOS native tar version). Install it via HomeBrew:"
+					printBrewInstallHelp "tar" "gnu-tar"
+					exit 127
+				fi
+			elif [ "$module" == "grep" ];
+			then
+				which grep &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU grep required. Install it via HomeBrew:"
+					printBrewInstallHelp "grep" "grep"
+					exit 127
+				fi
+				grep --version | grep -i GNU &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU grep required (not macOS native grep version). Install it via HomeBrew:"
+					printBrewInstallHelp "grep" "grep"
+					exit 127
+				fi
+			fi
+		done
+	fi
+}

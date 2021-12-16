@@ -13,6 +13,9 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 # Include util functions
 . "${selfFolderPath}utils.sh"
 
+# Sanity checks
+envSanityChecks "grep"
+
 # Default values
 default_VisualGenerator="Visual Studio 16 2019"
 default_VisualToolset="v142"
