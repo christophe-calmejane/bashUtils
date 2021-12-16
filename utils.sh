@@ -365,6 +365,13 @@ getCurrentGitRef()
 	eval $_retval="'${result}'"
 }
 
+getDeveloperSigningIdentities()
+{
+	local -n arrayNameRef=$1
+	local identityType="$2"
+	readarray -t arrayNameRef < <(security find-identity -v -p basic | grep -Po "^[[:space:]]+[0-9]+\)[[:space:]]+[0-9A-Z]+[[:space:]]+\"\K${identityType}: [^(]+\([^)]+\)(?=\")")
+}
+
 printBrewInstallHelp()
 {
 	local moduleName="$1"

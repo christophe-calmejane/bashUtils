@@ -231,11 +231,17 @@ do
 			;;
 		-ids)
 			if isMac; then
-				security find-identity -v -p codesigning | grep -Po "^[[:space:]]+[0-9]+\)[[:space:]]+[0-9A-Z]+[[:space:]]+\"\KDeveloper ID Application: [^(]+\([^)]+\)(?=\")"
-				if [ $? -ne 0 ]; then
-					echo "ERROR: No valid signing identity found. You must install a 'Developer ID Application' certificate"
+				getDeveloperSigningIdentities identities "Developer ID Application"
+				if [ ${#identities[*]} -eq 0 ]; then
+					echo "No valid signing identity found."
+					echo "You need to install a valid 'Developer ID Application' codesigning identity."
 					exit 4
 				fi
+				echo "Found ${#identities[*]} valid codesigning identities:"
+				for identity in "${identities[@]}"
+				do
+					echo " -> $identity"
+				done
 				exit 0
 			else
 				echo "ERROR: -ids option is only supported on macOS platform"
@@ -405,29 +411,26 @@ fi
 # Signing is now mandatory for macOS
 if isMac; then
 	# No signing identity provided, try to autodetect
+	getDeveloperSigningIdentities identities "Developer ID Application"
 	if [ "$signingId" == "" ]; then
 		echo -n "No code signing identity provided, autodetecting... "
-		signingId="$(security find-identity -v -p codesigning | grep -Po "^[[:space:]]+[0-9]+\)[[:space:]]+[0-9A-Z]+[[:space:]]+\"\KDeveloper ID Application: [^(]+\([^)]+\)(?=\")" -m1)"
-		if [ "$signingId" == "" ]; then
-			echo "ERROR: Cannot autodetect a valid code signing identity, please use -id option"
+		if [ ${#identities[*]} -eq 0 ]; then
+			echo "ERROR: No valid signing identity found."
+			echo "You need to install a valid 'Developer ID Application' codesigning identity."
 			exit 4
 		fi
+		signingId="${identities[0]}"
 		echo "using identity: '$signingId'"
 	fi
-	# Validate code signing identity exists and is of 'Developer ID Application' type
-	subSign="${signingId//(/\\(}" # Need to escape ( and )
-	subSign="${subSign//)/\\)}"
-	security find-identity -v -p codesigning | grep -Po "^[[:space:]]+[0-9]+\)[[:space:]]+[0-9A-Z]+[[:space:]]+\"${subSign}" | grep "Developer ID Application" &> /dev/null
-	if [ $? -ne 0 ]; then
-		echo "ERROR: Code signing identity '${signingId}' not found, use the full identity name inbetween the quotes (see -ids to get a list of valid identities)"
+	# Validate code signing identity exists
+	if [[ ! " ${identities[@]} " =~ " ${signingId} " ]]; then
+		echo "ERROR: Code signing identity '${signingId}' not found, use the full identity name (see -ids to get a list of valid identities)"
 		exit 4
 	fi
-	# Validate installer signing identity exists and is of 'Developer ID Installer' type
+	# Validate installer signing identity exists
+	getDeveloperSigningIdentities installerIdentities "Developer ID Installer"
 	signingInstallerId="${signingId/Developer ID Application/Developer ID Installer}"
-	subSign="${signingInstallerId//(/\\(}" # Need to escape ( and )
-	subSign="${subSign//)/\\)}"
-	security find-identity -v | grep -Po "^[[:space:]]+[0-9]+\)[[:space:]]+[0-9A-Z]+[[:space:]]+\"${subSign}" | grep "Developer ID Installer" &> /dev/null
-	if [ $? -ne 0 ]; then
+	if [[ ! " ${installerIdentities[@]} " =~ " ${signingInstallerId} " ]]; then
 		echo "ERROR: Installer signing identity '${signingInstallerId}' not found. Download or create it from your Apple Developer account (should be of type 'Developer ID Installer')"
 		exit 4
 	fi
