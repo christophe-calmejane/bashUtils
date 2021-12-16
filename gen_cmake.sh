@@ -28,7 +28,7 @@ cmake_generator=""
 generator_arch=""
 platform=""
 default_arch=""
-arch=""
+declare -a arch=()
 toolset=""
 cmake_config=""
 outputFolderBasePath="_build"
@@ -69,6 +69,7 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+# Parse variables
 outputFolder=""
 outputFolderForced=0
 add_cmake_opt=()
@@ -76,6 +77,8 @@ useVSclang=0
 hasTeamId=0
 signingId=""
 doSign=0
+listArchs=0
+useAllArchs=0
 signtoolOptions="$default_signtoolOptions"
 
 # Override defaults using config file, if loaded
@@ -97,7 +100,9 @@ do
 			echo " -a <flag> -> Append specified cmake flag to default ones (or to forced ones with -f option). Alternatively use -- if many flags are to be passed, to avoid many -a options"
 			echo " -b <cmake path> -> Force cmake binary path (Default: $cmake_path)"
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
-			echo " -arch <arch> -> Set target architecture (Default: $default_arch). Supported archs depends on target platform"
+			echo " -arch <arch> -> Set target architecture (Default: $default_arch). For platforms that support it, you can specify multiple -arch options"
+			echo " -archs -> List supported architectures (which depends on target platform)"
+			echo " -all-archs -> Build all supported architectures"
 			if isWindows; then
 				echo " -t <visual toolset> -> Force visual toolset (Default: $toolset)"
 				echo " -tc <visual toolchain> -> Force visual toolchain (Default: $toolchain)"
@@ -238,8 +243,7 @@ do
 					exit 4
 				fi
 				echo "Found ${#identities[*]} valid codesigning identities:"
-				for identity in "${identities[@]}"
-				do
+				for identity in "${identities[@]}"; do
 					echo " -> $identity"
 				done
 				exit 0
@@ -295,7 +299,13 @@ do
 				echo "ERROR: Missing parameter for -arch option, see help (-h)"
 				exit 4
 			fi
-			arch="$1"
+			arch+=("$1")
+			;;
+		-archs)
+			listArchs=1
+			;;
+		-all-archs)
+			useAllArchs=1
 			;;
 		-debug)
 			cmake_config="Debug"
@@ -345,20 +355,50 @@ if [ ! -z "$cmake_generator" ]; then
 	generator="$cmake_generator"
 fi
 
-# Default arch has not been overridden, use default arch
-if [ "x${arch}" == "x" ]; then
-	arch="${default_arch}"
+# Remove duplicates from supported archs
+# declare -a supportedArchsTemp=($(echo "${supportedArchs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+IFS=" " read -r -a supportedArchs <<< "$(tr ' ' '\n' <<< "${supportedArchs[@]}" | sort -u | tr '\n' ' ')"
+
+# List supported archs
+if [ $listArchs -eq 1 ]; then
+	echo "Supported archs for platform ${platform} (Default arch marked by [*]):"
+	for arch in "${supportedArchs[@]}";	do
+		if [ $arch == $default_arch ]; then
+			echo " [*] $arch"
+		else
+			echo "     $arch"
+		fi
+	done
+	exit 0
 fi
 
-# Check arch is valid for target platform
-if [[ ! " ${supportedArchs[@]} " =~ " ${arch} " ]]; then
-	echo "ERROR: Unsupported arch for target platform: ${arch} (Supported archs: ${supportedArchs[@]})"
-	exit 4
+# Use all archs
+if [ $useAllArchs -eq 1 ]; then
+	arch=("${supportedArchs[@]}")
 fi
+
+# No arch was specified on command line, use default arch
+if [ ${#arch[*]} -eq 0 ]; then
+	arch+=("$default_arch")
+fi
+
+# Check arch(s) is(are) valid for target platform
+for a in "${arch[@]}";	do
+	if [[ ! " ${supportedArchs[@]} " =~ " ${a} " ]]; then
+		echo "ERROR: Unsupported arch for platform ${platform}: ${a} (Supported archs: ${supportedArchs[@]})"
+		exit 4
+	fi
+done
 
 # Set correct generator architecture on Windows
 if [ "${platform}" == "win" ];
 then
+	# No support for multi arch on Windows
+	if [ ${#arch[*]} -gt 1 ]; then
+		echo "ERROR: Multi arch not supported on Windows"
+		exit 4
+	fi
+
 	case "${arch}" in
 		x86)
 			generator_arch="Win32"
@@ -375,6 +415,12 @@ then
 # Special case for Android cross-compilation, we must set the correct ABI
 elif [ "${platform}" == "android" ];
 then
+	# No support for multi arch on android (yet)
+	if [ ${#arch[*]} -gt 1 ]; then
+		echo "ERROR: Multi arch not supported on Android"
+		exit 4
+	fi
+
 	case "${arch}" in
 		x86)
 			add_cmake_opt+=("-DANDROID_ABI=x86")
@@ -391,22 +437,37 @@ then
 			;;
 	esac
 
-# Set macOS target architecture, otherwise Cmake targets the architecture of the host
-elif [ "${platform}" == "mac" ];
+# Set macOS/iOS target architecture(s), otherwise CMake targets the architecture of the host
+elif [[ "${platform}" == "mac" || "${platform}" == "ios" ]];
 then
-	case "${arch}" in
-		x64)
-			add_cmake_opt+=("-DCMAKE_OSX_ARCHITECTURES=x86_64")
-			;;
-		arm64)
-			add_cmake_opt+=("-DCMAKE_OSX_ARCHITECTURES=arm64")
-			;;
-		*)
-			echo "ERROR: Unknown macOS arch: ${arch} (add support for it)"
-			exit 4
-			;;
-	esac
+	# MacOS/iOS supports multi arch, convert each arch to cmake arch
+	declare -a cmake_archs=()
+	for a in "${arch[@]}"; do
+		case "${a}" in
+			x64)
+				cmake_archs+=("x86_64")
+				;;
+			arm)
+				cmake_archs+=("armv7")
+				cmake_archs+=("armv7s")
+				;;
+			arm64)
+				cmake_archs+=("arm64")
+				;;
+			*)
+				echo "ERROR: Unknown macOS/iOS arch: ${a} (add support for it)"
+				exit 4
+				;;
+		esac
+	done
+	# Concatenate all cmake archs into one string
+	printf -v cmake_arch_list "%s;" "${cmake_archs[@]}"
+	add_cmake_opt+=("-DCMAKE_OSX_ARCHITECTURES=${cmake_arch_list%;}")
 fi
+
+# Concatenate all archs into one string
+printf -v arch_list "%s_" "${arch[@]}"
+arch_list="${arch_list%_}"
 
 # Signing is now mandatory for macOS
 if isMac; then
@@ -478,7 +539,7 @@ else
 fi
 
 if [ $outputFolderForced -eq 0 ]; then
-	getOutputFolder outputFolder "${outputFolderBasePath}" "${platform}" "${arch}" "${toolset}" "${cmake_config}" "${generator}"
+	getOutputFolder outputFolder "${outputFolderBasePath}" "${platform}" "${arch_list}" "${toolset}" "${cmake_config}" "${generator}"
 fi
 
 if ! isSingleConfigurationGenerator "$generator"; then
@@ -510,7 +571,7 @@ echo "/--------------------------\\"
 echo "| Generating cmake project"
 echo "| - GENERATOR: ${generator}"
 echo "| - PLATFORM: ${platform}"
-echo "| - ARCH: ${arch}"
+echo "| - ARCH: ${arch[@]}"
 if [ ! -z "${toolset}" ]; then
 	echo "| - TOOLSET: ${toolset}"
 fi
