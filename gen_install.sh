@@ -512,7 +512,7 @@ if [ ${#versionSplit[*]} -eq 4 ]; then
 	is_release=0
 	internalVersion="${internalVersion}.${versionSplit[3]}"
 else
-	internalVersion="${internalVersion}.999"
+	internalVersion="${internalVersion}.99999"
 fi
 
 if isWindows; then
