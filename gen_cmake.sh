@@ -356,12 +356,11 @@ if [ ! -z "$cmake_generator" ]; then
 fi
 
 # Remove duplicates from supported archs
-# declare -a supportedArchsTemp=($(echo "${supportedArchs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-IFS=" " read -r -a supportedArchs <<< "$(tr ' ' '\n' <<< "${supportedArchs[@]}" | sort -u | tr '\n' ' ')"
+removeDuplicates supportedArchs
 
 # List supported archs
 if [ $listArchs -eq 1 ]; then
-	echo "Supported archs for platform ${platform} (Default arch marked by [*]):"
+	echo "Supported archs for platform ${platform} (Default arch marked with [*]):"
 	for arch in "${supportedArchs[@]}";	do
 		if [ $arch == $default_arch ]; then
 			echo " [*] $arch"

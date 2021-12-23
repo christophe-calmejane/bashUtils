@@ -438,3 +438,19 @@ envSanityChecks()
 		done
 	fi
 }
+
+removeDuplicates()
+{
+	local -n sourceArray=$1
+	local temp_array=()
+
+	for value in "${sourceArray[@]}";	do
+		# Not already added in array
+		if [[ ! " ${temp_array[@]} " =~ " ${value} " ]]; then
+			temp_array+=("$value")
+		fi
+	done
+
+	# Copy back to source array
+	sourceArray=("${temp_array[@]}")
+}
