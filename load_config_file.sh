@@ -30,4 +30,8 @@ if [ -z $configFileIncluded ]; then
 	params["appcast_releases_fallback"]="https://localhost/appcast-release.xml"
 	params["appcast_betas_fallback"]="https://localhost/appcast-beta.xml"
 	params["signtool_options"]="/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
+
+	if [[ $(type -t extend_lcf_fnc_init) == function ]]; then
+		extend_lcf_fnc_init knownOptions params
+	fi
 fi
