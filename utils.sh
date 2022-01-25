@@ -7,6 +7,11 @@ if [[ ${BASH_VERSINFO[0]} < 5 && (${BASH_VERSINFO[0]} < 4 || ${BASH_VERSINFO[1]}
   exit 255
 fi
 
+# Prevent MSYS from automatically converting paths to Windows format
+if [ $OSTYPE == "msys" ]; then
+	export MSYS_NO_PATHCONV=1
+fi
+
 # Parses an options file and fill an array with all options found.
 # parseFile <file path> <list of allowed options> <associative array to be filled, possibly pre-initialized with default values>
 #

@@ -6,7 +6,7 @@
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.3"
+GeneratorVersion="5.4"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
@@ -169,6 +169,7 @@ doCleanup=1
 doRebuild=1
 doSign=1
 doSym=1
+useIncredibuild=0
 gen_cmake_additional_options=()
 cmake_additional_options=()
 if [ -z $default_keyDigits ]; then
@@ -197,6 +198,7 @@ do
 			if isWindows; then
 				echo " -t <visual toolset> -> Force visual toolset (Default: $toolset)"
 				echo " -tc <visual toolchain> -> Force visual toolchain (Default: $toolchain)"
+				echo " -ib -> Use Incredibuild BuildConsole to build"
 			fi
 			echo " -no-sym -> Don't deploy symbols [Default=deploy])"
 			echo " -no-signing -> Do not sign binaries (Default: Do signing)"
@@ -284,6 +286,14 @@ do
 				gen_cmake_additional_options+=("$1")
 			else
 				echo "ERROR: -tc option is only supported on Windows platform"
+				exit 4
+			fi
+			;;
+		-ib)
+			if isWindows; then
+				useIncredibuild=1
+			else
+				echo "ERROR: -ib option is only supported on Windows platform"
 				exit 4
 			fi
 			;;
@@ -553,11 +563,20 @@ echo "done"
 
 pushd "${outputFolder}" &> /dev/null
 echo -n "Building project... "
-rebuildOption="--clean-first"
-if [ $doRebuild -eq 0 ]; then
-	rebuildOption=""
+declare -a cmakeBuildParameters=("--build" "." "-j" "4" "--config" "${buildConfig}" "--target" "install")
+if [ $doRebuild -eq 1 ]; then
+	cmakeBuildParameters+=("--clean-first")
 fi
-log=$("$cmake_path" --build . -j 4 ${rebuildOption} --config "${buildConfig}" --target install)
+declare -a buildCommand=()
+if [ $useIncredibuild -eq 1 ]; then
+	echo -n "Using Incredibuild... "
+	buildCommand+=("BuildConsole.exe")
+	buildCommand+=("/COMMAND=${cmake_path} ${cmakeBuildParameters[*]}") # Incredibuild expects a single parameter for the whole command (thus expand using * instead of @)
+else
+	buildCommand+=("${cmake_path}")
+	buildCommand+=("${cmakeBuildParameters[@]}")
+fi
+log=$("${buildCommand[@]}")
 if [ $? -ne 0 ]; then
 	echo "Failed to build project ;("
 	echo ""
