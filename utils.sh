@@ -459,3 +459,89 @@ removeDuplicates()
 	# Copy back to source array
 	sourceArray=("${temp_array[@]}")
 }
+
+vscode_append_build_task()
+{
+	local workspace_file_path="$1"
+	local build_folder="$2"
+	local build_config="$3"
+	local is_default=$4
+
+	echo "				\"label\": \"Build $build_config\"," >> "$workspace_file_path"
+	echo "				\"type\": \"shell\"," >> "$workspace_file_path"
+	echo "				\"command\": \"cmake --build $build_folder --config $build_config\"," >> "$workspace_file_path"
+	if isWindows; then
+		echo "				\"problemMatcher\": [\"\$msCompile\"]," >> "$workspace_file_path"
+	fi
+	if [ $is_default -eq 1 ]; then
+		echo "				\"group\": {" >> "$workspace_file_path"
+		echo "					\"kind\": \"build\"," >> "$workspace_file_path"
+		echo "					\"isDefault\": true," >> "$workspace_file_path"
+		echo "				}," >> "$workspace_file_path"
+	else
+		echo "				\"group\": \"build\"", >> "$workspace_file_path"
+	fi
+	echo "				\"presentation\": {" >> "$workspace_file_path"
+	echo "					\"reveal\": \"always\"," >> "$workspace_file_path"
+	echo "					\"focus\": false," >> "$workspace_file_path"
+	echo "					\"panel\": \"shared\"," >> "$workspace_file_path"
+	echo "					\"clear\": true" >> "$workspace_file_path"
+	echo "				}" >> "$workspace_file_path"
+}
+
+generate_vscode_workspace()
+{
+	local project_name="$1"
+	local build_folder="$2"
+	local build_config="$3"
+	local workspace_file_path="${build_folder}/${project_name}.code-workspace"
+
+	# Start a workspace file
+	echo "{" > "$workspace_file_path"
+
+	# Settings
+	echo "	\"settings\": {" >> "$workspace_file_path"
+	# Exclude files
+	echo "		\"files.exclude\": {" >> "$workspace_file_path"
+	echo "			\"**/.git\": true," >> "$workspace_file_path"
+	echo "			\"**/.vscode\": true," >> "$workspace_file_path"
+	echo "			\"**/_*\": true," >> "$workspace_file_path"
+	echo "			\"**/.DS_Store\": true," >> "$workspace_file_path"
+	echo "			\"**/Thumbs.db\": true" >> "$workspace_file_path"
+	echo "		}" >> "$workspace_file_path"
+	echo "	}," >> "$workspace_file_path"
+
+	# Add folders
+	echo "	\"folders\": [" >> "$workspace_file_path"
+	echo "		{" >> "$workspace_file_path"
+	echo "			\"path\": \"..\"" >> "$workspace_file_path"
+	echo "		}," >> "$workspace_file_path"
+	echo "		{" >> "$workspace_file_path"
+	echo "			\"path\": \".\"" >> "$workspace_file_path"
+	echo "		}" >> "$workspace_file_path"
+	echo "	]," >> "$workspace_file_path"
+
+	# Add build tasks
+	echo "	\"tasks\": {" >> "$workspace_file_path"
+	echo "		\"version\": \"2.0.0\"," >> "$workspace_file_path"
+	echo "		\"tasks\": [" >> "$workspace_file_path"
+	# If build config is not specified, this is a multi-config project
+	if [ -z "$build_config" ]; then
+		echo "			{" >> "$workspace_file_path"
+		vscode_append_build_task "$workspace_file_path" "$build_folder" "Debug" 1
+		echo "			}," >> "$workspace_file_path"
+		echo "			{" >> "$workspace_file_path"
+		vscode_append_build_task "$workspace_file_path" "$build_folder" "Release" 0
+		echo "			}" >> "$workspace_file_path"
+	else
+		# If build config is specified, this is a single-config project
+		echo "			{" >> "$workspace_file_path"
+		vscode_append_build_task "$workspace_file_path" "$build_folder" "$build_config" 1
+		echo "			}" >> "$workspace_file_path"
+	fi
+	echo "		]" >> "$workspace_file_path"
+	echo "	}" >> "$workspace_file_path"
+
+	# End workspace file
+	echo "}" >> "$workspace_file_path"
+}

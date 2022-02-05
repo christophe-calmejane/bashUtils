@@ -588,6 +588,23 @@ echo ""
 
 "$cmake_path" -H. -B"${outputFolder}" "-G${generator}" $generator_arch_option $toolset_option $cmake_opt "${add_cmake_opt[@]}"
 
+if [ -z "$projectName" ]; then
+	# Get project name
+	projectName="$(grep -Po "project *\( *(\K[^\"][^ )]+|\"\K[^\"]+)" "CMakeLists.txt")"
+	if [[ $projectName == "" ]]; then
+		echo "Cannot detect project name"
+		exit 1
+	fi
+	projectName="${projectName//[$'\t\r\n']}"
+	projectName="${projectName/#la_/}"
+fi
+if [ -z "${cmake_config}" ]; then
+	workspace_name="${projectName}_${arch[@]}"
+else
+	workspace_name="${projectName}_${arch[@]}_${cmake_config}"
+fi
+generate_vscode_workspace "${workspace_name}" "${outputFolder}" "${cmake_config}"
+
 if [ $? -ne 0 ]; then
 	echo ""
 	echo "Something went wrong, check log"
