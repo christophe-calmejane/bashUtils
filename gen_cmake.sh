@@ -603,7 +603,6 @@ if [ -z "${cmake_config}" ]; then
 else
 	workspace_name="${projectName}_${arch[@]}_${cmake_config}"
 fi
-generate_vscode_workspace "${workspace_name}" "${outputFolder}" "${cmake_config}"
 
 if [ $? -ne 0 ]; then
 	echo ""
