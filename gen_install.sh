@@ -1,27 +1,50 @@
 #!/usr/bin/env bash
 # Useful script to generate an installer of a cmake application project
 # Set cmake_opt variable before calling this script to set cmake defines
+# Set selfFolderPath variable before calling this script to the absolute path of the calling script
 # The following functions can be defined before including this script:
 #   extend_gi_fnc_help() -> Called when -h is requested. No return value
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.4"
+GeneratorVersion="5.5"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
 
+# Check if selfFolderPath is defined
+if [ -z "$selfFolderPath" ]; then
+	echo "ERROR: selfFolderPath variable not set. Please set it before calling this script."
+	exit 1
+fi
+# Check if selfFolderPath is absolute
+if [[ "$selfFolderPath" != /* ]]; then
+	echo "ERROR: selfFolderPath variable is not absolute. Please set it to an absolute path before calling this script."
+	exit 1
+fi
+# Check if selfFolderPath is a directory
+if [ ! -d "$selfFolderPath" ]; then
+	echo "ERROR: selfFolderPath variable is not a directory. Please set it to an absolute path to a directory before calling this script."
+	exit 1
+fi
+# Locally store selfFolderPath for later use
+bu_gi_callerFolderPath="$selfFolderPath"
+# Check if bu_gi_callerFolderPath ends with /
+if [[ "${bu_gi_callerFolderPath: -1}" != "/" ]]; then
+	bu_gi_callerFolderPath="$bu_gi_callerFolderPath/"
+fi
+
 # Get absolute folder for this script
-selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
+bu_gi_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
 
 # Include utils functions
-. "${selfFolderPath}utils.sh"
+. "${bu_gi_selfFolderPath}utils.sh"
 
 # Sanity checks
 envSanityChecks "grep" "tar"
 
 # Include config file functions
-. "${selfFolderPath}load_config_file.sh"
+. "${bu_gi_selfFolderPath}load_config_file.sh"
 
 # Deploy symbols found in current directory
 deploySymbols()
@@ -470,7 +493,7 @@ cleanup_main()
 	if [[ $doCleanup -eq 1 && $1 -eq 0 ]]; then
 		echo -n "Cleaning... "
 		sleep 2
-		rm -rf "${selfFolderPath}${outputFolder}"
+		rm -rf "${bu_gi_callerFolderPath}${outputFolder}"
 		echo "done"
 	else
 		echo "Not cleaning up as requested, folder '${outputFolder}' untouched"
@@ -479,9 +502,6 @@ cleanup_main()
 }
 
 trap 'cleanup_main $?' EXIT
-
-# Cleanup previous build folders, just in case
-rm -rf "${selfFolderPath}${outputFolder}"
 
 if [ -z "$projectName" ]; then
 	# Get project name
@@ -549,6 +569,11 @@ if [ -f *"${fullInstallerName}" ]; then
 fi
 
 cmake_additional_options+=("-DCU_INSTALLER_NAME=${installerBaseName}")
+
+# Cleanup previous build folders, just in case
+if [ $doRebuild -eq 1 ]; then
+	rm -rf "${bu_gi_callerFolderPath}${outputFolder}"
+fi
 
 # Compilation stuff
 echo -n "Generating cmake files... "

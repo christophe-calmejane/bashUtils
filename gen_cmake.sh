@@ -8,10 +8,10 @@
 #   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
 
 # Get absolute folder for this script
-selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
+bu_gc_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
 
 # Include util functions
-. "${selfFolderPath}utils.sh"
+. "${bu_gc_selfFolderPath}utils.sh"
 
 # Sanity checks
 envSanityChecks "grep"
