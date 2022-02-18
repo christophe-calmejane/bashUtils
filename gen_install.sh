@@ -7,7 +7,7 @@
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.5"
+GeneratorVersion="5.6"
 
 echo "Install Generator version $GeneratorVersion"
 echo ""
@@ -126,7 +126,6 @@ deploySymbols()
 		fi
 		for sym in `ls`
 		do
-			#rm -rf "${symbolsServerPath}/${sym}"
 			cp -R "${sym}" "${symbolsServerPath}/"
 		done
 
@@ -149,6 +148,7 @@ arch=""
 toolset=""
 outputFolderBasePath="_install"
 defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<toolset>_<config>"
+deliverablesFolder="_deliverables"
 declare -a supportedArchs=()
 if isMac; then
 	cmake_path="/Applications/CMake.app/Contents/bin/cmake"
@@ -215,6 +215,7 @@ do
 			echo " -a <flags> -> Add cmake flags directly passed to underlying gen_cmake.sh"
 			echo " -b <cmake path> -> Force cmake binary path (Default: $cmake_path)"
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
+			echo " -d <deliverables folder> -> Force deviverables output folder (Default: $deliverablesFolder)"
 			echo " -arch <arch> -> Set target architecture (Default: $default_arch). Supported archs depends on target platform"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
@@ -266,6 +267,14 @@ do
 			cmake_generator="$1" # Update local value, we need it later
 			gen_cmake_additional_options+=("-c")
 			gen_cmake_additional_options+=("$1")
+			;;
+		-d)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -d option, see help (-h)"
+				exit 4
+			fi
+			deliverablesFolder="$1"
 			;;
 		-arch)
 			shift
@@ -398,6 +407,20 @@ done
 if [[ $(type -t extend_gi_fnc_postparse) == function ]]; then
 	extend_gi_fnc_postparse
 fi
+
+# Ensure deliverablesFolder ends with /
+if [[ ${deliverablesFolder: -1} != "/" ]]; then
+	deliverablesFolder="$deliverablesFolder/"
+fi
+
+# Ensure deliverablesFolder does not exist (neither file nor directory)
+if [ -e "$deliverablesFolder" ]; then
+	echo "ERROR: Deliverables folder '$deliverablesFolder' already exists"
+	exit 4
+fi
+
+# Create deliverablesFolder
+mkdir -p "$deliverablesFolder"
 
 if [ ! -z "$cmake_generator" ]; then
 	echo "Overriding default cmake generator ($generator) with: $cmake_generator"
@@ -627,7 +650,7 @@ which tar &> /dev/null
 if [ $? -eq 0 ]; then
 	symbolsFile="${installerBaseName}-symbols.tgz"
 	echo -n "Archiving symbols... "
-	log=$(tar cvzf "${symbolsFile}" "${outputFolder}"/Symbols)
+	log=$(tar cvzf "${deliverablesFolder}${symbolsFile}" "${outputFolder}"/Symbols)
 	if [ $? -ne 0 ]; then
 		echo "Failed to archive symbols ;("
 		echo ""
@@ -637,18 +660,20 @@ if [ $? -eq 0 ]; then
 	echo "done"
 fi
 
-installerFile=$(ls "${outputFolder}"/*"${fullInstallerName}")
-if [ ! -f "$installerFile" ]; then
+generatedInstallerFile=$(ls "${outputFolder}"/*"${fullInstallerName}")
+if [ ! -f "$generatedInstallerFile" ]; then
 	echo "ERROR: Cannot find installer file in $outputFolder sub folder. Not cleaning it so you can manually search. Symbols have not been deployed either, so you might not want to publish this version."
 	doCleanup=0
 	exit 1
 fi
 
+mv "${generatedInstallerFile}" "${deliverablesFolder}"
+
 if [ $doSign -eq 1 ]; then
 	# MacOS already signed by CPack
 	if isWindows; then
 		echo -n "Signing Package..."
-		log=$(signtool sign ${signtoolOptions} "${installerFile}")
+		log=$(signtool sign ${signtoolOptions} "${deliverablesFolder}${fullInstallerName}")
 		if [ $? -ne 0 ]; then
 			echo "Failed to sign package ;("
 			echo ""
@@ -659,7 +684,6 @@ if [ $doSign -eq 1 ]; then
 	fi
 fi
 
-mv "${installerFile}" .
 
 echo ""
 echo "Installer generated: ${fullInstallerName}"
