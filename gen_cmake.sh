@@ -518,6 +518,8 @@ if [ $doSign -eq 1 ]; then
 			add_cmake_opt+=("-DCU_SIGNTOOL_OPTIONS=$signtoolOptions")
 		fi
 	fi
+else
+	add_cmake_opt+=("-DENABLE_CODE_SIGNING=FALSE")
 fi
 
 # Using -clang option (shortcut to auto-define the toolset)
