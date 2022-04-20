@@ -210,6 +210,14 @@ getExistingFolders()
 	eval $_retval="'${result}'"
 }
 
+isInDocker()
+{
+	if grep -sq 'docker\|lxc' /proc/1/cgroup; then
+		return 0
+	fi
+	return 1
+}
+
 getOS()
 {
 	local _retval="$1"
@@ -229,7 +237,12 @@ getOS()
 			# We have to check for WSL
 			local regex="*[Mm]icrosoft*"
 			if [[ `uname -r` == $regex ]]; then
-				result="win"
+				# But not in a Docker
+				if isInDocker; then
+					result="linux"
+				else
+					result="win"
+				fi
 			else
 				result="linux"
 			fi
