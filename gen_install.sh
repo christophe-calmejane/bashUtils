@@ -4,12 +4,17 @@
 # Set selfFolderPath variable before calling this script to the absolute path of the calling script
 # The following functions can be defined before including this script:
 #   extend_gi_fnc_help() -> Called when -h is requested. No return value
+#   extend_gi_fnc_defaults() -> Called when default values are initialized. Override default global values from the function. No return value
+#     - default_VisualGenerator -> Visual Studio version to use. Default is "Visual Studio 16 2019"
+#     - default_VisualToolset -> Visual Studio toolset to use. Default is "v142"
+#     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
+#     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
+#     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
-############################ DO NOT MODIFY AFTER THAT LINE #############
-GeneratorVersion="5.6"
+GI_GeneratorVersion="6.0"
 
-echo "Install Generator version $GeneratorVersion"
+echo "Install Generator version $GI_GeneratorVersion"
 echo ""
 
 # Check if selfFolderPath is defined
@@ -135,10 +140,14 @@ deploySymbols()
 
 # Default values
 default_VisualGenerator="Visual Studio 16 2019"
-default_VisualGeneratorArch="Win32"
 default_VisualToolset="v142"
 default_VisualToolchain="x64"
 default_VisualArch="x86"
+
+# Check for defaults override
+if [[ $(type -t extend_gi_fnc_defaults) == function ]]; then
+	extend_gi_fnc_defaults
+fi
 
 #
 cmake_generator=""

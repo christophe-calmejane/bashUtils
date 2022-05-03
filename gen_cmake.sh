@@ -3,9 +3,20 @@
 # Set cmake_opt variable before calling this script to set cmake defines
 # The following functions can be defined before including this script:
 #   extend_gc_fnc_help() -> Called when -h is requested. No return value
+#   extend_gc_fnc_defaults() -> Called when default values are initialized. Override default global values from the function. No return value
+#     - default_VisualGenerator -> Visual Studio version to use. Default is "Visual Studio 16 2019"
+#     - default_VisualToolset -> Visual Studio toolset to use. Default is "v142"
+#     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
+#     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
+#     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 #   extend_gc_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 #   extend_gc_fnc_precmake() -> Called just before invoking cmake. The $add_cmake_opt list can be appended. No return value
 #   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
+
+GC_GeneratorVersion="6.0"
+
+echo "CMake Generator version $GC_GeneratorVersion"
+echo ""
 
 # Get absolute folder for this script
 bu_gc_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
@@ -22,6 +33,11 @@ default_VisualToolset="v142"
 default_VisualToolchain="x64"
 default_VisualArch="x86"
 default_signtoolOptions="/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
+
+# Check for defaults override
+if [[ $(type -t extend_gc_fnc_defaults) == function ]]; then
+	extend_gc_fnc_defaults
+fi
 
 # 
 cmake_generator=""
