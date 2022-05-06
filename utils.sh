@@ -142,12 +142,7 @@ getFileSize()
 	local _retval="$2"
 	local result=""
 
-	if isMac;
-	then
-		result=$(stat -f%z "$filePath")
-	else
-		result=$(stat -c%s "$filePath")
-	fi
+	result=$(stat -c%s "$filePath")
 
 	eval $_retval="'${result}'"
 }
@@ -450,6 +445,22 @@ envSanityChecks()
 				then
 					echo "GNU grep required (not macOS native grep version). Install it via HomeBrew:"
 					printBrewInstallHelp "grep" "grep"
+					exit 127
+				fi
+			elif [ "$module" == "stat" ];
+			then
+				which stat &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU stat required. Install it via HomeBrew:"
+					printBrewInstallHelp "stat" "coreutils"
+					exit 127
+				fi
+				stat --version | grep -i GNU &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU stat required (not macOS native stat version). Install it via HomeBrew:"
+					printBrewInstallHelp "stat" "coreutils"
 					exit 127
 				fi
 			fi

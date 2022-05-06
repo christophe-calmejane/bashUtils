@@ -46,7 +46,7 @@ bu_gi_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the
 . "${bu_gi_selfFolderPath}utils.sh"
 
 # Sanity checks
-envSanityChecks "grep" "tar"
+envSanityChecks "grep" "tar" "stat"
 
 # Include config file functions
 . "${bu_gi_selfFolderPath}load_config_file.sh"
