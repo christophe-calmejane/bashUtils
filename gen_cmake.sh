@@ -9,11 +9,13 @@
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
 #     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
+#     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
+#     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
 #   extend_gc_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 #   extend_gc_fnc_precmake() -> Called just before invoking cmake. The $add_cmake_opt list can be appended. No return value
 #   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
 
-GC_GeneratorVersion="6.0"
+GC_GeneratorVersion="7.0"
 
 echo "CMake Generator version $GC_GeneratorVersion"
 echo ""
@@ -33,6 +35,8 @@ default_VisualToolset="v142"
 default_VisualToolchain="x64"
 default_VisualArch="x86"
 default_signtoolOptions="/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
+default_keyDigits=2
+default_betaTagName="-beta"
 
 # Check for defaults override
 if [[ $(type -t extend_gc_fnc_defaults) == function ]]; then
@@ -96,6 +100,9 @@ doSign=0
 listArchs=0
 useAllArchs=0
 signtoolOptions="$default_signtoolOptions"
+key_digits=$((10#$default_keyDigits))
+key_postfix=""
+betaTagName="${default_betaTagName}"
 
 # Override defaults using config file, if loaded
 if [[ ! -z $configFileLoaded && $configFileLoaded -eq 1 ]]; then
@@ -136,6 +143,9 @@ do
 			echo " -release -> Force release configuration (Single-Configuration generators only)"
 			echo " -sign -> Sign binaries (Default: No signing)"
 			echo " -asan -> Enable Address Sanitizer (Default: Off)"
+			echo " -key-digits <Number of digits> -> The number of digits to be used as Key for installation, comprised between 0 and 4 (Default: $default_keyDigits)"
+			echo " -key-postfix <Postfix> -> Postfix string to be added to the Key for installation (Default: "")"
+			echo " -beta-tag <BetaTag> -> Set the beta tag to use before the 4th digit (Default: $default_betaTagName)"
 			if [[ $(type -t extend_gc_fnc_help) == function ]]; then
 				extend_gc_fnc_help
 			fi
@@ -335,6 +345,44 @@ do
 		-asan)
 			add_cmake_opt+=("-DCU_ENABLE_ASAN=TRUE")
 			;;
+		-key-digits)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -key-digits option, see help (-h)"
+				exit 4
+			fi
+			numberRegex='^[0-9]$'
+			if ! [[ $1 =~ $numberRegex ]]; then
+				echo "ERROR: Invalid value for -key-digits option (not a number), see help (-h)"
+				exit 4
+			fi
+			key_digits=$((10#$1))
+			if [[ $key_digits -lt 0 || $key_digits -gt 4 ]]; then
+				echo "ERROR: Invalid value for -key-digits option (not comprised between 0 and 4), see help (-h)"
+				exit 4
+			fi
+			;;
+		-key-postfix)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -key-postfix option, see help (-h)"
+				exit 4
+			fi
+			postfixRegex='^[a-zA-Z0-9_+-]+$'
+			if ! [[ $1 =~ $postfixRegex ]]; then
+				echo "ERROR: Invalid value for -key-postfix option (Only alphanum, underscore, plus and minus are allowed), see help (-h): $1"
+				exit 4
+			fi
+			key_postfix="$1"
+			;;
+		-beta-tag)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -beta-tag option, see help (-h)"
+				exit 4
+			fi
+			betaTagName="$1"
+			;;
 		--)
 			shift
 			while [ $# -gt 0 ]
@@ -370,6 +418,11 @@ if [ ! -z "$cmake_generator" ]; then
 	echo "Overriding default cmake generator ($generator) with: $cmake_generator"
 	generator="$cmake_generator"
 fi
+
+# Set marketing options
+add_cmake_opt+=("-DMARKETING_VERSION_DIGITS=${key_digits}")
+add_cmake_opt+=("-DMARKETING_VERSION_POSTFIX=${key_postfix}")
+add_cmake_opt+=("-DCU_BETA_TAG=${betaTagName}")
 
 # Remove duplicates from supported archs
 removeDuplicates supportedArchs

@@ -10,9 +10,11 @@
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
 #     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
+#     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
+#     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 
-GI_GeneratorVersion="6.0"
+GI_GeneratorVersion="7.0"
 
 echo "Install Generator version $GI_GeneratorVersion"
 echo ""
@@ -143,6 +145,8 @@ default_VisualGenerator="Visual Studio 16 2019"
 default_VisualToolset="v142"
 default_VisualToolchain="x64"
 default_VisualArch="x86"
+default_keyDigits=2
+default_betaTagName="-beta"
 
 # Check for defaults override
 if [[ $(type -t extend_gi_fnc_defaults) == function ]]; then
@@ -204,14 +208,8 @@ doSym=1
 useIncredibuild=0
 gen_cmake_additional_options=()
 cmake_additional_options=()
-if [ -z $default_keyDigits ]; then
-	default_keyDigits=2
-fi
 key_digits=$((10#$default_keyDigits))
 key_postfix=""
-if [ -z $default_betaTagName ]; then
-	default_betaTagName="-beta"
-fi
 betaTagName="${default_betaTagName}"
 
 while [ $# -gt 0 ]
@@ -393,7 +391,6 @@ do
 				exit 4
 			fi
 			betaTagName="$1"
-			cmake_additional_options+=("-DCU_BETA_TAG=${betaTagName}")
 			;;
 		*)
 			consumed_args=0
@@ -445,6 +442,18 @@ fi
 if [[ ! " ${supportedArchs[@]} " =~ " ${arch} " ]]; then
 	echo "ERROR: Unsupported arch for target platform: ${arch} (Supported archs: ${supportedArchs[@]})"
 	exit 4
+fi
+
+# Forward more parameters to gen_cmake
+gen_cmake_additional_options+=("-key-digits")
+gen_cmake_additional_options+=("$key_digits")
+if [ ! -z "$key_postfix" ]; then
+	gen_cmake_additional_options+=("-key-postfix")
+	gen_cmake_additional_options+=("$key_postfix")
+fi
+if [ ! -z "$betaTagName" ]; then
+	gen_cmake_additional_options+=("-beta-tag")
+	gen_cmake_additional_options+=("$betaTagName")
 fi
 
 # Load config file
@@ -499,10 +508,6 @@ if [ ${params["use_sparkle"]} = true ]; then
 		cmake_additional_options+=("-DAPPCAST_BETAS_FALLBACK_URL=${params["appcast_betas_fallback"]}")
 	fi
 fi
-
-# Build marketing options
-cmake_additional_options+=("-DMARKETING_VERSION_DIGITS=${key_digits}")
-cmake_additional_options+=("-DMARKETING_VERSION_POSTFIX=${key_postfix}")
 
 if [ ! -z "$cmake_generator" ]; then
 	echo "Overriding default cmake generator ($generator) with: $cmake_generator"
