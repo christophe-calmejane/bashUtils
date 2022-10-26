@@ -440,8 +440,8 @@ envSanityChecks()
 					printBrewInstallHelp "grep" "grep"
 					exit 127
 				fi
-				grep --version | grep -i GNU &> /dev/null
-				if [ $? -ne 0 ];
+				grep --version | grep -i BSD &> /dev/null
+				if [ $? -eq 0 ];
 				then
 					echo "GNU grep required (not macOS native grep version). Install it via HomeBrew:"
 					printBrewInstallHelp "grep" "grep"
