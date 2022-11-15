@@ -631,6 +631,8 @@ if ! isSingleConfigurationGenerator "$generator"; then
 			toolset_option="-T${toolset} "
 		fi
 	fi
+elif [ ! -z "${toolset}" ]; then
+	add_cmake_opt+=("-DSINGLE_GENERATOR_TOOLSET=${toolset}")
 fi
 
 if [[ $(type -t extend_gc_fnc_precmake) == function ]]; then
