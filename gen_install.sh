@@ -420,9 +420,17 @@ if [[ ${deliverablesFolder: -1} != "/" ]]; then
 fi
 
 # Ensure deliverablesFolder does not exist (neither file nor directory)
-if [ -e "$deliverablesFolder" ]; then
-	echo "ERROR: Deliverables folder '$deliverablesFolder' already exists"
-	exit 4
+if [ -e "${deliverablesFolder%/*}" ]; then
+	if [ -f "${deliverablesFolder%/*}" ];
+	then
+		echo "ERROR: Deliverables folder '$deliverablesFolder' already exists and is a file"
+		exit 4
+	fi
+	if ! isEmptyFolder "$deliverablesFolder";
+	then
+		echo "ERROR: Deliverables folder '$deliverablesFolder' already exists and is not empty"
+		exit 4
+	fi
 fi
 
 # Create deliverablesFolder

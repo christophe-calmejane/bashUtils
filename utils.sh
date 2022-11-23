@@ -205,6 +205,17 @@ getExistingFolders()
 	eval $_retval="'${result}'"
 }
 
+isEmptyFolder()
+{
+	test -e "${1%/*}/"* 2> /dev/null
+	case $? in
+		1)
+			return 0;;
+		*)
+			return 1;;
+	esac
+}
+
 isInDocker()
 {
 	if grep -sq 'docker\|lxc' /proc/1/cgroup; then
