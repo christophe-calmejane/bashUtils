@@ -441,6 +441,16 @@ if [ ! -z "$cmake_generator" ]; then
 	generator="$cmake_generator"
 fi
 
+# Check for macOS generator when using macOS >= 13
+if isMac; then
+	macvers="$(sw_vers -productVersion)"
+	if [[ ${macvers%%.*} -ge 13 && "${generator}" == "Xcode" ]];
+	then
+		echo "Xcode generator is unstable starting with macOS Ventura, please use ninja instead (-c Ninja)"
+		exit 4
+	fi
+fi
+
 # Default arch has not been overridden, use default arch
 if [ "x${arch}" == "x" ]; then
 	arch="${default_arch}"
