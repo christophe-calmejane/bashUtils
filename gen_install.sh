@@ -620,6 +620,11 @@ if [ $doRebuild -eq 1 ]; then
 	rm -rf "${bu_gi_callerFolderPath}${outputFolder}"
 fi
 
+# We must add a cmake parameter when using Single-Configuration generators
+if isSingleConfigurationGenerator "$generator"; then
+	gen_cmake_additional_options+=("-${buildConfig,,}")
+fi
+
 # Compilation stuff
 echo -n "Generating cmake files... "
 log=$(./gen_cmake.sh -o "${outputFolder}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt" -- "${cmake_additional_options[@]}")
@@ -705,7 +710,6 @@ if [ $doSign -eq 1 ]; then
 		echo "done"
 	fi
 fi
-
 
 echo ""
 echo "Installer generated: ${fullInstallerName}"
