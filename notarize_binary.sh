@@ -4,53 +4,53 @@
 notarizeFile()
 {
 	local fileName="$1"
-	local userName="$2"
-	local password="$3"
-	local bundleId="$4"
+	local profileName="$2"
 
 	echo -n "Sending binary for notarization... "
-	local uploadResult=$(xcrun altool --notarize-app --primary-bundle-id "${bundleId}" --username "${userName}" --password "${password}" --file "${fileName}")
-	local regexPattern="RequestUUID = ([^\n]+)"
-	if [[ $uploadResult =~ $regexPattern ]]; then
-		echo "done"
-		local uuid="${BASH_REMATCH[1]}"
-		echo -n "Waiting for Apple validation..."
-		while true; do
-			sleep 10
-			local infoResult=$(xcrun altool -u "${userName}" --password "${password}" --notarization-info "${uuid}")
-			local progressRegex="Status: in progress"
-			local approvedRegex="Status Message: Package Approved"
-			if [[ $infoResult =~ $progressRegex ]]; then
-				echo -n "."
-				continue
-			elif [[ $infoResult =~ $approvedRegex ]]; then
-				echo " done"
-				break
+	local uploadResult # We must declare the variable before assigning in order to get the return code in $?
+	uploadResult=$(xcrun notarytool submit "${fileName}" -p "${profileName}" --wait)
+	if [ $? -eq 0 ]; then
+		local regexPattern="Processing complete[[:space:]]+id:[[:space:]]+([0-9a-z\-]+)[[:space:]]+status:[[:space:]]+([a-zA-Z]+)"
+		if [[ $uploadResult =~ $regexPattern ]]; then
+			local uuid="${BASH_REMATCH[1]}"
+			local status="${BASH_REMATCH[2]}"
+			if [[ "$status" == "Accepted" ]]; then
+				echo "done"
+				echo -n "Stapling binary... "
+				local stapleResult # We must declare the variable before assigning in order to get the return code in $?
+				stapleResult=$(xcrun stapler staple "${fileName}")
+				if [ $? -eq 0 ]; then
+					echo "done"
+					return
+				else
+					echo "failed: $stapleResult"
+					exit 1
+				fi
 			else
-				echo " failed: $infoResult"
-				exit 1
+				echo "failed"
+				echo "Check log using: xcrun notarytool log $uuid -p ${profileName}"
+				return
 			fi
-        done
-		echo -n "Stapling binary... "
-		local stapleResult=$(xcrun stapler staple "${fileName}")
-		if [ $? -eq 0 ]; then
-			echo "done"
-		else
-			echo "failed: $stapleResult"
-			exit 1
 		fi
-	else
-		echo "failed: $uploadResult"
-		exit 1
 	fi
+	echo "failed: $uploadResult"
+	exit 1
 }
 
 printHelp()
 {
-	echo "Usage: notarize_binary.sh <Binary Path> <User Name> <Password> <Notarization Bundle Identifier>"
+	echo "Usage: notarize_binary.sh <Binary Path> <Keychain Profile>"
+	echo ""
+	echo "In order to create a Keychain profile (just once), run:"
+	echo "	xcrun notarytool store-credentials YourProfileName --apple-id YourAccountEmailAdrs --password YourAppSpecificPwd --team-id YourTeamID"
+	echo ""
+	echo "You will first need to generate an application specific password if you don't have one already (you cannot use your Apple ID account password for security reasons):"
+	echo "	- Sign in to your [Apple ID account page](https://appleid.apple.com/account/home) (https://appleid.apple.com/account/home)"
+	echo "	- In the Security section, click Generate Password below App-Specific Passwords"
+	echo "	- Follow the steps on your screen"
 }
 
-if [ $# -ne 4 ]; then
+if [ $# -ne 2 ]; then
 	echo "ERROR: Missing parameters"
 	printHelp
 	exit 1
@@ -62,6 +62,6 @@ if [ ! -f "$1" ]; then
 	exit 1
 fi
 
-notarizeFile "$1" "$2" "$3" "$4"
+notarizeFile "$1" "$2"
 
 exit 0
