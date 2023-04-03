@@ -218,9 +218,27 @@ isEmptyFolder()
 
 isInDocker()
 {
+	# Check for the presence of the IN_DOCKER_CONTAINER environment variable
+	if [ -n "$IN_DOCKER_CONTAINER" ]; then
+		return 0
+	fi
+
+	# Check for the presence of the /.dockerenv file
+	if [ -f "/.dockerenv" ]; then
+		return 0
+	fi
+
+	# Check for the presence of the /.dockerinit file
+	if [ -f "/.dockerinit" ]; then
+		return 0
+	fi
+
+	# Check for 'docker' or 'lxc' in the cgroup file
 	if grep -sq 'docker\|lxc' /proc/1/cgroup; then
 		return 0
 	fi
+
+	# Not in a Docker container
 	return 1
 }
 
