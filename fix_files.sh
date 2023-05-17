@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-FIX_FILES_VERSION="2.0"
+FIX_FILES_VERSION="2.1"
 
 echo "Fix-Files version $FIX_FILES_VERSION"
 echo ""
@@ -161,6 +161,7 @@ if [ $do_line_endings -eq 1 ]; then
 		applyLineEndings ".+\.vert(\.in)?$" listOfAllFiles "Vertex Shader"
 		applyLineEndings ".+\.php(\.in)?$" listOfAllFiles "php"
 		applyLineEndings ".+\.xml(\.in)?$" listOfAllFiles "XML"
+		applyLineEndings ".+\.i(\.in)?$" listOfAllFiles "SWIG Interface"
 	else
 		echo "dos2unix command not found, not changing file line endings"
 	fi
@@ -187,6 +188,7 @@ if [ $do_chmod -eq 1 ]; then
 		applyFileAttributes ".+\.vert(\.in)?$" "a-x" listOfAllFiles "Vertex Shader"
 		applyFileAttributes ".+\.php(\.in)?$" "a-x" listOfAllFiles "php"
 		applyFileAttributes ".+\.xml(\.in)?$" "a-x" listOfAllFiles "XML"
+		applyFileAttributes ".+\.i(\.in)?$" "a-x" listOfAllFiles "SWIG Interface"
 
 		# Other files (non-executable)
 		applyFileAttributes ".+\.svg$" "a-x" listOfAllFiles "SVG Image"
