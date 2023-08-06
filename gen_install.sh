@@ -157,7 +157,7 @@ fi
 cmake_generator=""
 platform=""
 default_arch=""
-arch=""
+declare -a arch=()
 toolset=""
 outputFolderBasePath="_install"
 defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<toolset>_<config>"
@@ -204,6 +204,8 @@ buildConfigOverride=0
 doCleanup=1
 doRebuild=1
 doSign=1
+listArchs=0
+useAllArchs=0
 doSym=1
 useIncredibuild=0
 gen_cmake_additional_options=()
@@ -224,6 +226,8 @@ do
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
 			echo " -d <deliverables folder> -> Force deviverables output folder (Default: $deliverablesFolder)"
 			echo " -arch <arch> -> Set target architecture (Default: $default_arch). Supported archs depends on target platform"
+			echo " -archs -> List supported architectures (which depends on target platform)"
+			echo " -all-archs -> Build all supported architectures"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
 			if isWindows; then
@@ -292,6 +296,13 @@ do
 			arch="$1"
 			gen_cmake_additional_options+=("-arch")
 			gen_cmake_additional_options+=("$arch")
+			;;
+		-archs)
+			listArchs=1
+			;;
+		-all-archs)
+			useAllArchs=1
+			gen_cmake_additional_options+=("-all-archs")
 			;;
 		-no-clean)
 			doCleanup=0
@@ -451,16 +462,43 @@ if isMac; then
 	fi
 fi
 
-# Default arch has not been overridden, use default arch
-if [ "x${arch}" == "x" ]; then
-	arch="${default_arch}"
+# Remove duplicates from supported archs
+removeDuplicates supportedArchs
+
+# List supported archs
+if [ $listArchs -eq 1 ]; then
+	echo "Supported archs for platform ${platform} (Default arch marked with [*]):"
+	for arch in "${supportedArchs[@]}";	do
+		if [ $arch == $default_arch ]; then
+			echo " [*] $arch"
+		else
+			echo "     $arch"
+		fi
+	done
+	exit 0
 fi
 
-# Check arch is valid for target platform
-if [[ ! " ${supportedArchs[@]} " =~ " ${arch} " ]]; then
-	echo "ERROR: Unsupported arch for target platform: ${arch} (Supported archs: ${supportedArchs[@]})"
-	exit 4
+# Use all archs
+if [ $useAllArchs -eq 1 ]; then
+	arch=("${supportedArchs[@]}")
 fi
+
+# No arch was specified on command line, use default arch
+if [ ${#arch[*]} -eq 0 ]; then
+	arch+=("$default_arch")
+fi
+
+# Check arch(s) is(are) valid for target platform
+for a in "${arch[@]}";	do
+	if [[ ! " ${supportedArchs[@]} " =~ " ${a} " ]]; then
+		echo "ERROR: Unsupported arch for platform ${platform}: ${a} (Supported archs: ${supportedArchs[@]})"
+		exit 4
+	fi
+done
+
+# Concatenate all archs into one string
+printf -v arch_list "%s_" "${arch[@]}"
+arch_list="${arch_list%_}"
 
 # Forward more parameters to gen_cmake
 gen_cmake_additional_options+=("-key-digits")
@@ -532,7 +570,7 @@ if [ ! -z "$cmake_generator" ]; then
 	generator="$cmake_generator"
 fi
 
-getOutputFolder outputFolder "${outputFolderBasePath}" "${platform}" "${arch}" "${toolset}" "${buildConfig}" "${generator}"
+getOutputFolder outputFolder "${outputFolderBasePath}" "${platform}" "${arch_list}" "${toolset}" "${buildConfig}" "${generator}"
 
 toolset_option=""
 if [ ! -z "${toolset}" ]; then
