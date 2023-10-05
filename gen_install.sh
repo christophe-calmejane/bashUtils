@@ -162,6 +162,7 @@ toolset=""
 outputFolderBasePath="_install"
 defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<toolset>_<config>"
 deliverablesFolder="_deliverables"
+verbose=0
 declare -a supportedArchs=()
 if isMac; then
 	cmake_path="/Applications/CMake.app/Contents/bin/cmake"
@@ -221,6 +222,7 @@ do
 			echo "Usage: gen_install.sh [options]"
 			echo " -h -> Display this help"
 			echo " -v -> Print script version and exit"
+			echo " -vvv -> Verbose mode"
 			echo " -a <flags> -> Add cmake flags directly passed to underlying gen_cmake.sh"
 			echo " -b <cmake path> -> Force cmake binary path (Default: $cmake_path)"
 			echo " -c <cmake generator> -> Force cmake generator (Default: $generator)"
@@ -248,6 +250,9 @@ do
 			;;
 		-v)
 			exit 0
+			;;
+		-vvv)
+			verbose=1
 			;;
 		-a)
 			shift
@@ -674,15 +679,24 @@ if isSingleConfigurationGenerator "$generator"; then
 fi
 
 # Compilation stuff
-echo -n "Generating cmake files... "
-log=$(./gen_cmake.sh -o "${outputFolder}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt" -- "${cmake_additional_options[@]}")
-if [ $? -ne 0 ]; then
-	echo "Failed to generate cmake files ;("
-	echo ""
-	echo $log
-	exit 1
+if [ $verbose -eq 1 ]; then
+	echo "Running command: ./gen_cmake.sh -o \"${outputFolder}\" ${gen_cmake_additional_options[@]} $toolset_option -f \"$cmake_opt\" -- ${cmake_additional_options[@]}"
+	./gen_cmake.sh -o "${outputFolder}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt" -- "${cmake_additional_options[@]}"
+	if [ $? -ne 0 ]; then
+		echo "Failed to generate cmake files ;("
+		exit 1
+	fi
+else
+	echo -n "Generating cmake files... "
+	log=$(./gen_cmake.sh -o "${outputFolder}" "${gen_cmake_additional_options[@]}" $toolset_option -f "$cmake_opt" -- "${cmake_additional_options[@]}")
+	if [ $? -ne 0 ]; then
+		echo "Failed to generate cmake files ;("
+		echo ""
+		echo $log
+		exit 1
+	fi
+	echo "done"
 fi
-echo "done"
 
 pushd "${outputFolder}" &> /dev/null
 echo -n "Building project... "
