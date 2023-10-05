@@ -491,6 +491,8 @@ fi
 # No arch was specified on command line, use default arch
 if [ ${#arch[*]} -eq 0 ]; then
 	arch+=("$default_arch")
+	gen_cmake_additional_options+=("-arch")
+	gen_cmake_additional_options+=("$default_arch")
 fi
 
 # Check arch(s) is(are) valid for target platform
