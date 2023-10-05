@@ -646,7 +646,12 @@ else
 fi
 
 if isWindows; then
-	installerOSName="win32"
+	# OS name based on arch
+	if [ "$arch_list" == "x64" ]; then
+		installerOSName="win64"
+	else
+		installerOSName="win32"
+	fi
 	installerExtension="exe"
 elif isMac; then
 	installerOSName="Darwin"
