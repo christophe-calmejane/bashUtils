@@ -565,11 +565,9 @@ getQtDir()
 			# qtArch="" # Maybe use qtArchName as well? (if yes, factorize qtArch for both QT_BASE_PATH and system wide)
 			qtDir="${qtBasePath}/cmake"
 		else
-			echo "Using system wide Qt headers and libraries."
-			echo "QT_BASE_PATH env variable can be defined to the root folder of Qt installation (where MaintenanceTool resides), or the -qtdir option. See help (-h) for more details."
 			qtBasePath="${qtBaseInstallPath}"
 			qtArch="${qtArchName}"
-			qtDir="${qtBasePath}/${qtArch}/cmake"
+			qtDir="${qtBasePath}/${qtArch}/cmake/Qt${majorVersion}"
 		fi
 	else
 		echo "Unsupported platform"
