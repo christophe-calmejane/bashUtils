@@ -500,6 +500,7 @@ envSanityChecks()
 	fi
 }
 
+# Remove duplicates from an array
 removeDuplicates()
 {
 	local -n sourceArray=$1
@@ -514,4 +515,64 @@ removeDuplicates()
 
 	# Copy back to source array
 	sourceArray=("${temp_array[@]}")
+}
+
+# Get the cmake config Qt path for the current OS, specified Qt arch and Qt version
+getQtDir()
+{
+	# $arch must be defined before calling this function
+	local -n _retval="$1"
+	local qtBaseInstallPath="$2"
+	local qtArchName="$3"
+	local qtVersion="$4"
+
+	local qtBasePath=""
+	local qtArch=""
+	local qtDir=""
+	local majorVersion="${qtVersion%%.*}"
+
+	if isWindows; then
+		qtBasePath="${qtBaseInstallPath}/${QtVersion}"
+		if [ "$arch" == "x64" ]; then
+			qtArch="${qtArchName}_64"
+		else
+			qtArch="${qtArchName}"
+		fi
+		qtDir="${qtBasePath}/${qtArch}/lib/cmake"
+	elif isMac; then
+		qtBasePath="${qtBaseInstallPath}/${QtVersion}"
+		if [ "${majorVersion}" == "6" ] ; then
+			qtArch="macos"
+		else
+			qtArch="${qtArchName}"
+		fi
+		qtDir="${qtBasePath}/${qtArch}/lib/cmake"
+	elif isLinux; then
+		which g++ &> /dev/null
+		if [ $? -ne 0 ];
+		then
+			echo "ERROR: g++ not found"
+			exit 4
+		fi
+		if [ "x${QT_BASE_PATH}" != "x" ]; then
+			if [ ! -f "${QT_BASE_PATH}/MaintenanceTool" ]; then
+				echo "Invalid QT_BASE_PATH: MaintenanceTool not found in specified folder: ${QT_BASE_PATH}"
+				echo "Maybe try the -qtdir option, see help (-h)"
+				exit 1
+			fi
+
+			qtBasePath="${QT_BASE_PATH}/${QtVersion}"
+			# qtArch="" # Maybe use qtArchName as well? (if yes, factorize qtArch for both QT_BASE_PATH and system wide)
+			qtDir="${qtBasePath}/cmake"
+		else
+			qtBasePath="${qtBaseInstallPath}"
+			qtArch="${qtArchName}"
+			qtDir="${qtBasePath}/${qtArch}/cmake/Qt${majorVersion}"
+		fi
+	else
+		echo "Unsupported platform"
+		exit 1
+	fi
+
+	_retval="${qtDir}"
 }
