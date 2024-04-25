@@ -6,6 +6,15 @@ if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
 	exit 1
 fi
 
+# Get absolute folder for this script
+selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
+
+# Include utils functions
+. "${selfFolderPath}utils.sh"
+
+# Sanity checks
+envSanityChecks "sed"
+
 function updateCopyrightYear()
 {
 	local filePattern="$1"
