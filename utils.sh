@@ -479,6 +479,30 @@ envSanityChecks()
 					printBrewInstallHelp "grep" "grep"
 					exit 127
 				fi
+			elif [ "$module" == "sed" ];
+			then
+				which sed &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU sed required. Install it via HomeBrew:"
+					printBrewInstallHelp "sed" "gnu-sed"
+					exit 127
+				fi
+				local sedVersion;
+				sedVersion=$(sed --version &> /dev/null)
+				if [ $? -ne 0 ];
+				then
+					echo "GNU sed required (not macOS native sed version). Install it via HomeBrew:"
+					printBrewInstallHelp "sed" "gnu-sed"
+					exit 127
+				fi
+				echo $sedVersion | grep -i BSD &> /dev/null
+				if [ $? -eq 0 ];
+				then
+					echo "GNU sed required (not macOS native sed version). Install it via HomeBrew:"
+					printBrewInstallHelp "sed" "gnu-sed"
+					exit 127
+				fi
 			elif [ "$module" == "stat" ];
 			then
 				which stat &> /dev/null
@@ -495,6 +519,9 @@ envSanityChecks()
 					printBrewInstallHelp "stat" "coreutils"
 					exit 127
 				fi
+			else
+				echo "Unsupported module, please add it: $module"
+				exit 127
 			fi
 		done
 	fi
