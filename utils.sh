@@ -594,7 +594,7 @@ getQtDir()
 		else
 			qtBasePath="${qtBaseInstallPath}"
 			qtArch="${qtArchName}"
-			qtDir="${qtBasePath}/${qtArch}/cmake/Qt${majorVersion}"
+			qtDir="${qtBasePath}/${qtArch}/cmake"
 		fi
 	else
 		echo "Unsupported platform"
