@@ -259,14 +259,8 @@ getOS()
 			;;
 		linux*)
 			# We have to check for WSL
-			local regex="*[Mm]icrosoft*"
-			if [[ `uname -r` == $regex ]]; then
-				# But not in a Docker
-				if isInDocker; then
-					result="linux"
-				else
-					result="win"
-				fi
+			if isWSL; then
+				result="win"
 			else
 				result="linux"
 			fi
@@ -317,6 +311,18 @@ isLinux()
 isCygwin()
 {
 	if [[ $OSTYPE = cygwin ]]; then
+		return 0
+	fi
+	return 1
+}
+
+# Returns 0 if running OS is WSL (but not in a Docker container)
+isWSL()
+{
+	# uname -r outputs the kernel version, which contains "microsoft" if running in WSL(2), currently it is the only way to detect WSL
+	# otherwise other elements from uname or OSType will only return linux results,
+	# also true when running in a Docker container thus the need to check for that
+	if [[ $OSTYPE == linux* ]] && [[ $(uname -r) == *[Mm]icrosoft* ]] && ! isInDocker ; then
 		return 0
 	fi
 	return 1
