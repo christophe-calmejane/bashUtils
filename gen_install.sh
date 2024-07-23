@@ -769,7 +769,7 @@ if [ $doSign -eq 1 ]; then
 	# MacOS already signed by CPack
 	if isWindows; then
 		echo -n "Signing Package..."
-		log=$(signtool sign ${signtoolOptions} "${deliverablesFolder}${fullInstallerName}")
+		log=$(signtool.exe sign ${signtoolOptions} "${deliverablesFolder}${fullInstallerName}")
 		if [ $? -ne 0 ]; then
 			echo "Failed to sign package ;("
 			echo ""
