@@ -5,8 +5,8 @@
 # The following functions can be defined before including this script:
 #   extend_gi_fnc_help() -> Called when -h is requested. No return value
 #   extend_gi_fnc_defaults() -> Called when default values are initialized. Override default global values from the function. No return value
-#     - default_VisualGenerator -> Visual Studio version to use. Default is "Visual Studio 16 2019"
-#     - default_VisualToolset -> Visual Studio toolset to use. Default is "v142"
+#     - default_VisualGenerator -> Visual Studio version to use. Default is "Visual Studio 17 2022"
+#     - default_VisualToolset -> Visual Studio toolset to use. Default is "v143"
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
 #     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
@@ -141,8 +141,8 @@ deploySymbols()
 }
 
 # Default values
-default_VisualGenerator="Visual Studio 16 2019"
-default_VisualToolset="v142"
+default_VisualGenerator="Visual Studio 17 2022"
+default_VisualToolset="v143"
 default_VisualToolchain="x64"
 default_VisualArch="x86"
 default_keyDigits=2
