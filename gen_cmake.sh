@@ -387,6 +387,11 @@ do
 			shift
 			while [ $# -gt 0 ]
 			do
+				# Ignore another "--" if present
+				if [ "$1" == "--" ]; then
+					shift
+					continue
+				fi
 				add_cmake_opt+=("$1")
 				shift
 			done
