@@ -20,6 +20,7 @@ defaultConfigType="Release"
 outputFolder="$defaultOutputFolder"
 configType="$defaultConfigType"
 nugetSource=""
+nugetApiKey=""
 libName=""
 add_cmake_opt=()
 
@@ -34,6 +35,7 @@ do
 			echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
 			echo " -c <config> -> Configuration type (Default: ${defaultConfigType})"
 			echo " -s <source> -> NuGet source (Mandatory)"
+			echo " -k <apiKey -> NuGet API key (Mandatory)"
 			echo " -l <libName> -> Library name (Mandatory)"
 			exit 3
 			;;
@@ -60,6 +62,14 @@ do
 				exit 4
 			fi
 			nugetSource="$1"
+			;;
+		-k)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -k option, see help (-h)"
+				exit 4
+			fi
+			nugetApiKey="$1"
 			;;
 		-l)
 			shift
@@ -103,6 +113,12 @@ if [ -z "$nugetSource" ]; then
 	exit 1
 fi
 
+# Error if the nugetApiKey is empty
+if [ -z "$nugetApiKey" ]; then
+	echo "NuGet API key is mandatory, please provide it using -k option."
+	exit 1
+fi
+
 # Error if the libName is empty
 if [ -z "$libName" ]; then
 	echo "Library name is mandatory, please provide it using -l option."
@@ -112,7 +128,7 @@ fi
 publishTargetName=${libName}-csharp-nuget-push
 
 # Additional cmake parameters
-add_cmake_opt+=("-DNUGET_PUBLISH_SOURCE_URL=$nugetSource" "-DNUGET_PUBLISH_API_KEY=az")
+add_cmake_opt+=("-DNUGET_PUBLISH_SOURCE_URL=$nugetSource" "-DNUGET_PUBLISH_API_KEY=$nugetApiKey")
 
 # Additional gen_cmake parameters
 declare -a params=()
