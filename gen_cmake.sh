@@ -102,6 +102,7 @@ useAllArchs=0
 signtoolOptions="$default_signtoolOptions"
 key_digits=$((10#$default_keyDigits))
 key_postfix=""
+marketing_version=""
 betaTagName="${default_betaTagName}"
 
 # Override defaults using config file, if loaded
@@ -145,6 +146,7 @@ do
 			echo " -asan -> Enable Address Sanitizer (Default: Off)"
 			echo " -key-digits <Number of digits> -> The number of digits to be used as Key for installation, comprised between 0 and 4 (Default: $default_keyDigits)"
 			echo " -key-postfix <Postfix> -> Postfix string to be added to the Key for installation (Default: "")"
+			echo " -marketing-version <Version> -> Set the marketing version to use (Default: Generated from CMakeLists.txt)"
 			echo " -beta-tag <BetaTag> -> Set the beta tag to use before the 4th digit (Default: $default_betaTagName)"
 			if [[ $(type -t extend_gc_fnc_help) == function ]]; then
 				extend_gc_fnc_help
@@ -375,6 +377,14 @@ do
 			fi
 			key_postfix="$1"
 			;;
+		-marketing-version)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -marketing-version option, see help (-h)"
+				exit 4
+			fi
+			marketing_version="$1"
+			;;
 		-beta-tag)
 			shift
 			if [ $# -lt 1 ]; then
@@ -427,6 +437,7 @@ fi
 # Set marketing options
 add_cmake_opt+=("-DMARKETING_VERSION_DIGITS=${key_digits}")
 add_cmake_opt+=("-DMARKETING_VERSION_POSTFIX=${key_postfix}")
+add_cmake_opt+=("-DMARKETING_VERSION=${marketing_version}")
 add_cmake_opt+=("-DCU_BETA_TAG=${betaTagName}")
 
 # Remove duplicates from supported archs
