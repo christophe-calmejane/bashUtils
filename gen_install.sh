@@ -213,6 +213,7 @@ gen_cmake_additional_options=()
 cmake_additional_options=()
 key_digits=$((10#$default_keyDigits))
 key_postfix=""
+marketing_version=""
 betaTagName="${default_betaTagName}"
 
 while [ $# -gt 0 ]
@@ -242,6 +243,7 @@ do
 			echo " -debug -> Compile using Debug configuration (Default: Release)"
 			echo " -key-digits <Number of digits> -> The number of digits to be used as Key for installation, comprised between 0 and 4 (Default: $default_keyDigits)"
 			echo " -key-postfix <Postfix> -> Postfix string to be added to the Key for installation (Default: "")"
+			echo " -marketing-version <Version> -> Set the marketing version to use (Default: Generated from CMakeLists.txt)"
 			echo " -beta-tag <BetaTag> -> Set the beta tag to use before the 4th digit (Default: $default_betaTagName)"
 			if [[ $(type -t extend_gi_fnc_help) == function ]]; then
 				extend_gi_fnc_help
@@ -400,6 +402,14 @@ do
 			fi
 			key_postfix="$1"
 			;;
+		-marketing-version)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -marketing-version option, see help (-h)"
+				exit 4
+			fi
+			marketing_version="$1"
+            ;;
 		-beta-tag)
 			shift
 			if [ $# -lt 1 ]; then
@@ -513,6 +523,10 @@ gen_cmake_additional_options+=("$key_digits")
 if [ ! -z "$key_postfix" ]; then
 	gen_cmake_additional_options+=("-key-postfix")
 	gen_cmake_additional_options+=("$key_postfix")
+fi
+if [ ! -z "$marketing_version" ]; then
+	gen_cmake_additional_options+=("-marketing-version")
+	gen_cmake_additional_options+=("$marketing_version")
 fi
 if [ ! -z "$betaTagName" ]; then
 	gen_cmake_additional_options+=("-beta-tag")
@@ -662,7 +676,15 @@ else
 	exit 1
 fi
 
-installerBaseName="${projectName}-${releaseVersion}${beta_tag}${build_tag}+${installerOSName}"
+if [ -n "$marketing_version" ]; then
+	installerBaseName="${projectName}-${marketing_version}${beta_tag}${build_tag}"
+else
+	installerBaseName="${projectName}-${releaseVersion}${beta_tag}${build_tag}"
+fi
+if [ -n "$marketing_version" ]; then
+	installerBaseName="${installerBaseName}+${cmakeVersion}"
+fi
+installerBaseName="${installerBaseName}+${installerOSName}"
 if [ $buildConfigOverride -eq 1 ]; then
 	installerBaseName="${installerBaseName}+${buildConfig}"
 fi
