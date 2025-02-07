@@ -87,7 +87,7 @@ getGeneratorShortName()
 			result="vs"
 			;;
 		*)
-			result="${generator}"
+			echo "Unsupported CMake generator: ${generator}"
 			exit 4
 			;;
 	esac
