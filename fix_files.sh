@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash 
 
 FIX_FILES_VERSION="2.1"
 
@@ -20,6 +20,7 @@ fi
 do_clang_format=1
 do_line_endings=1
 do_chmod=1
+include_submodules=0
 
 while [ $# -gt 0 ]
 do
@@ -30,7 +31,11 @@ do
 			echo " --no-clang-format -> Do not run clang-format on source files (Default: Run clang-format, but only if .clang-format file found)"
 			echo " --no-line-endings -> Do not force line endings on source files (Default: Change line-endings)"
 			echo " --no-chmod -> Do not run chmod on all files to fix executable bit (Default: Run chmod)"
+			echo " --include-submodules -> Include submodules files for selected fixes (Default: Do not include submodules)"
 			exit 3
+			;;
+		--include-sumodules)
+			include_submodules=1
 			;;
 		--no-clang-format)
 			do_clang_format=0
@@ -116,7 +121,20 @@ function applyLineEndings()
 function listFiles()
 {
 	local outputArray=$1
-	readarray -d '' $outputArray < <(find . -not -path "./.git/*" -not -path "./3rdparty/*" -not -path "./externals/*" -not -path "./_*" -type f -print0)
+
+	if [[ -f ./.gitmodules && $include_submodules -eq 0 ]]; then
+		echo "Ignoring submodules files"
+		submoduleArgs=""
+		submodulePaths=$(cat .gitmodules | grep "path" | awk '{print $3}') 
+		for submodulePath in $submodulePaths
+		do
+			submoduleArgs+=" -not -path ./$submodulePath/* "
+		done
+	fi
+	# Required to avoid globbing during string expension
+	set -o noglob
+	readarray -d '' $outputArray < <(find . -not -path "./.git/*" -not -path "./3rdparty/*" -not -path "./externals/*" -not -path "./_*" $submoduleArgs -type f -print0)
+	set +o noglob
 }
 
 # List all files
