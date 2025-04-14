@@ -14,16 +14,11 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 # Sanity checks
 envSanityChecks "awk"
 
-# Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
-if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
-	echo "ERROR: Must be run from the root folder of your project (where your main CMakeLists.txt file is)"
-	exit 1
-fi
-
 do_clang_format=1
 do_line_endings=1
 do_chmod=1
 include_submodules=0
+no_root_check=0
 
 while [ $# -gt 0 ]
 do
@@ -31,14 +26,17 @@ do
 		-h)
 			echo "Usage: fix_files.sh [options]"
 			echo " -h -> Display this help"
+			echo " --version -> Display version"
 			echo " --no-clang-format -> Do not run clang-format on source files (Default: Run clang-format, but only if .clang-format file found)"
 			echo " --no-line-endings -> Do not force line endings on source files (Default: Change line-endings)"
 			echo " --no-chmod -> Do not run chmod on all files to fix executable bit (Default: Run chmod)"
 			echo " --include-submodules -> Include submodules files for selected fixes (Default: Do not include submodules)"
+			echo " --no-root-check -> Do not check if we are in the root folder of the project (Default: Check)"
 			exit 3
 			;;
-		--include-sumodules)
-			include_submodules=1
+		--version)
+			echo "Fix-Files version $FIX_FILES_VERSION"
+			exit 0
 			;;
 		--no-clang-format)
 			do_clang_format=0
@@ -49,6 +47,12 @@ do
 		--no-chmod)
 			do_chmod=0
 			;;
+		--include-sumodules)
+			include_submodules=1
+			;;
+		--no-root-check)
+			no_root_check=1
+			;;
 		*)
 			echo "ERROR: Unknown option '$1' (use -h for help)"
 			exit 4
@@ -56,6 +60,14 @@ do
 	esac
 	shift
 done
+
+if [[ $no_root_check -eq 0 ]]; then
+	# Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
+	if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
+		echo "ERROR: Must be run from the root folder of your project (where your main CMakeLists.txt file is)"
+		exit 1
+	fi
+fi
 
 function applyFormat()
 {
