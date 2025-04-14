@@ -525,6 +525,22 @@ envSanityChecks()
 					printBrewInstallHelp "stat" "coreutils"
 					exit 127
 				fi
+			elif [ "$module" == "awk" ];
+			then
+				which awk &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU awk required. Install it via HomeBrew:"
+					printBrewInstallHelp "gawk" "gawk"
+					exit 127
+				fi
+				awk --version | grep -i GNU &> /dev/null
+				if [ $? -ne 0 ];
+				then
+					echo "GNU awk required (not macOS native awk version). Install it via HomeBrew:"
+					printBrewInstallHelp "gawk" "gawk"
+					exit 127
+				fi
 			else
 				echo "Unsupported module, please add it: $module"
 				exit 127

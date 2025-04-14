@@ -1,6 +1,6 @@
 #!/usr/bin/env bash 
 
-FIX_FILES_VERSION="2.1"
+FIX_FILES_VERSION="2.2"
 
 echo "Fix-Files version $FIX_FILES_VERSION"
 echo ""
@@ -10,6 +10,9 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 
 # Include util functions
 . "${selfFolderPath}utils.sh"
+
+# Sanity checks
+envSanityChecks "awk"
 
 # Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
 if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
@@ -123,12 +126,12 @@ function listFiles()
 	local outputArray=$1
 
 	if [[ -f ./.gitmodules && $include_submodules -eq 0 ]]; then
-		echo "Ignoring submodules files"
 		submoduleArgs=""
 		submodulePaths=$(cat .gitmodules | grep "path" | awk '{print $3}') 
 		for submodulePath in $submodulePaths
 		do
 			submoduleArgs+=" -not -path ./$submodulePath/* "
+			echo "Ignoring submodule path: $submodulePath"
 		done
 	fi
 	# Required to avoid globbing during string expension
