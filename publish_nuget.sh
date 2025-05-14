@@ -150,7 +150,7 @@ elif isLinux; then
 fi
 
 # Generate solution
-$SHELL "${bu_pn_selfFolderPath}gen_cmake.sh" -o $outputFolder ${params[@]} -- "${add_cmake_opt[@]}"
+. "${bu_pn_selfFolderPath}gen_cmake.sh" -o $outputFolder ${params[@]} -- "${add_cmake_opt[@]}"
 
 # Build and publish
 cmake --build $outputFolder --target $publishTargetName --config $configType
