@@ -138,8 +138,7 @@ if isWindows; then
 	params+=("-arch" "x64")
 # On macOS, use all archs and Ninja generator
 elif isMac; then
-	# params+=("-all-archs") # Currently disabling multi-arch builds, until a solution is found to correctly generate multi-arch NuGet packages (assemblies)
-	params+=("-arch" "x64")
+	params+=("-all-archs") # Force multi-arch build
 	params+=("-c" "Ninja")
 	params+=("-${configType,,}")
 # On Linux, use x64 architecture and Ninja generator
