@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Useful script to publish a C# NuGet package
 
-PN_Version="1.0"
+PN_Version="1.1"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
@@ -22,6 +22,7 @@ configType="$defaultConfigType"
 nugetSource=""
 nugetApiKey=""
 libName=""
+doRebuild=1
 add_cmake_opt=()
 
 while [ $# -gt 0 ]
@@ -29,14 +30,15 @@ do
 	case "$1" in
 		-h)
 			echo "Usage: publish_nuget.sh [options] -- [cmake options]"
-			echo "Everything passed after -- will be passed directly to the cmake command"
+			echo "Everything passed after -- will be passed directly to the gen_cmake command"
 			echo "Available options:"
 			echo " -h -> Display this help"
 			echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
 			echo " -c <config> -> Configuration type (Default: ${defaultConfigType})"
 			echo " -s <source> -> NuGet source (Mandatory)"
-			echo " -k <apiKey -> NuGet API key (Mandatory)"
+			echo " -k <apiKey -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
 			echo " -l <libName> -> Library name (Mandatory)"
+			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
 			exit 3
 			;;
 		-o)
@@ -79,6 +81,9 @@ do
 			fi
 			libName="$1"
 			;;
+		-no-rebuild)
+			doRebuild=0
+			;;
 		--)
 			shift
 			while [ $# -gt 0 ]
@@ -101,8 +106,8 @@ do
 	shift
 done
 
-# Error if the output folder already exists
-if [ -d $outputFolder ]; then
+# Error if the output folder already exists and doRebuild is set
+if [[ -d $outputFolder && $doRebuild -eq 1 ]]; then
 	echo "Output folder already exists ($outputFolder). Please remove it before running this script."
 	exit 1
 fi
@@ -110,12 +115,6 @@ fi
 # Error if the nugetSource is empty
 if [ -z "$nugetSource" ]; then
 	echo "NuGet source is mandatory, please provide it using -s option."
-	exit 1
-fi
-
-# Error if the nugetApiKey is empty
-if [ -z "$nugetApiKey" ]; then
-	echo "NuGet API key is mandatory, please provide it using -k option."
 	exit 1
 fi
 
