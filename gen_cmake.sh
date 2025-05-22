@@ -15,7 +15,7 @@
 #   extend_gc_fnc_precmake() -> Called just before invoking cmake. The $add_cmake_opt list can be appended. No return value
 #   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
 
-GC_GeneratorVersion="7.0"
+GC_GeneratorVersion="8.0"
 
 echo "CMake Generator version $GC_GeneratorVersion"
 echo ""
@@ -55,10 +55,11 @@ outputFolderBasePath="_build"
 defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<toolset>_<config>"
 declare -a supportedArchs=()
 if isMac; then
-	cmake_path="/Applications/CMake.app/Contents/bin/cmake"
-	# CMake.app not found, use cmake from the path
-	if [ ! -f "${cmake_path}" ]; then
-		cmake_path="cmake"
+	cmake_path="cmake"
+	# cmake from the path not found, try CMake.app
+	which "${cmake_path}" &> /dev/null
+	if [ $? -ne 0 ]; then
+		cmake_path="/Applications/CMake.app/Contents/bin/cmake"
 	fi
 	generator="Xcode"
 	getMachineArch default_arch
@@ -667,6 +668,7 @@ fi
 
 echo "/--------------------------\\"
 echo "| Generating cmake project"
+echo "| - CMAKE VERS: $("$cmake_path" --version | grep -oP '\d+(\.\d+)+')"
 echo "| - GENERATOR: ${generator}"
 echo "| - PLATFORM: ${platform}"
 echo "| - ARCH: ${arch[@]}"
