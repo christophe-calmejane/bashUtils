@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+MESSAGE_PREFIX="[pre-push]"
+FIXFILES_SCRIPT_PATH="__SCRIPT_PATH__"
+
+function printSuccess {
+    printf "\e[32m%s\e[0m" "$1"
+}
+
+function printError {
+    printf "\e[31m%s\e[0m" "$1"
+}
+
+fixFilesPath="$FIXFILES_SCRIPT_PATH"
+
+fixFilesLogPath="./fixFilesOut.log"
+
+if [[ "$fixFilesPath" == "__SCRIPT_PATH__" ]]; then
+    printf "$MESSAGE_PREFIX $(printError "failed: fixFilesPath not set.")\n"
+    exit 1
+fi
+
+if [[ -f $fixFilesPath ]]; then 
+    printf "$MESSAGE_PREFIX Running fix_files.sh ($fixFilesPath)..."
+    if ! $fixFilesPath > $fixFilesLogPath
+    then
+        printf "$(printError "failed: fix_files.sh error")\n"
+        printf "script output:\n$(cat $fixFilesLogPath)\n"
+        exit 1
+    fi
+else
+    printf "$MESSAGE_PREFIX $(printError "$fixFilesPath not found")\n"
+    printf "To update submodules: git submodules update --init --recursive\n"
+    printf "To ignore pre-push hook execution: git push --no-verify\n"
+    exit 1
+fi
+
+if ! git diff --name-status --exit-code > /dev/null
+then
+    printf "$(printError "failed: files have been changed by $fixFilesPath")\n"
+    
+    printf "Please commit the following:\n$(git diff --name-status --exit-code)\n\n"
+    exit 1
+else
+    printf "$(printSuccess "success")\n"
+    rm -rf $fixFilesLogPath
+fi
+
+
+
+
+
