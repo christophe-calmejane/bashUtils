@@ -666,10 +666,8 @@ if isWindows; then
 	else
 		installerOSName="win32"
 	fi
-	installerExtension="exe"
 elif isMac; then
 	installerOSName="Darwin"
-	installerExtension="pkg"
 else
 	getOS osName
 	echo "ERROR: Installer for $osName not supported yet"
@@ -687,12 +685,6 @@ fi
 installerBaseName="${installerBaseName}+${installerOSName}"
 if [ $buildConfigOverride -eq 1 ]; then
 	installerBaseName="${installerBaseName}+${buildConfig}"
-fi
-fullInstallerName="${installerBaseName}.${installerExtension}"
-
-if [ -f *"${fullInstallerName}" ]; then
-	echo "Installer already exists for version ${releaseVersion}, please remove it first."
-	exit 1
 fi
 
 cmake_additional_options+=("-DCU_INSTALLER_NAME=${installerBaseName}")
@@ -778,14 +770,15 @@ if [ $? -eq 0 ]; then
 	echo "done"
 fi
 
-generatedInstallerFile=$(ls "${outputFolder}"/*"${fullInstallerName}")
-if [ ! -f "$generatedInstallerFile" ]; then
+generatedInstallerFilePath=$(ls "${outputFolder}"/*"${installerBaseName}."*)
+if [ ! -f "$generatedInstallerFilePath" ]; then
 	echo "ERROR: Cannot find installer file in $outputFolder sub folder. Not cleaning it so you can manually search. Symbols have not been deployed either, so you might not want to publish this version."
 	doCleanup=0
 	exit 1
 fi
+fullInstallerName="${generatedInstallerFilePath##*/}" # Get the file name only
 
-mv "${generatedInstallerFile}" "${deliverablesFolder}"
+mv "${generatedInstallerFilePath}" "${deliverablesFolder}"
 
 if [ $doSign -eq 1 ]; then
 	# MacOS already signed by CPack
