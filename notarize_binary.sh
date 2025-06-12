@@ -16,9 +16,23 @@ notarizeFile()
 			local status="${BASH_REMATCH[2]}"
 			if [[ "$status" == "Accepted" ]]; then
 				echo "done"
+				local fileToStaple="${fileName}"
+				# Check if the file is a ZIP archive, if so we need to unzip it first in a temporary directory
+				if [[ "${fileName}" == *.zip ]]; then
+					local tempDir=$(mktemp -d)
+					echo -n "Unzipping binary to temporary directory... "
+					unzip -q "${fileName}" -d "${tempDir}"
+					# Find the first '.app' in the unzipped directory
+					fileToStaple=$(find "${tempDir}" -type d -name "*.app" | head -n 1)
+					if [ -z "${fileToStaple}" ]; then
+						echo "failed: No .app found in the ZIP archive"
+						exit 1
+					fi
+					echo "done"
+				fi
 				echo -n "Stapling binary... "
 				local stapleResult # We must declare the variable before assigning in order to get the return code in $?
-				stapleResult=$(xcrun stapler staple "${fileName}")
+				stapleResult=$(xcrun stapler staple "${fileToStaple}")
 				if [ $? -eq 0 ]; then
 					echo "done"
 					return
