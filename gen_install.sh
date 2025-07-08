@@ -75,16 +75,27 @@ deploySymbols()
 			echo "FAILED: 'symbols_windows_pdb_server_path' variable not set in ${configFile}"
 			return
 		fi
-		if isCygwin; then
-			symbolsServerPath=$(cygpath -a -u "${symbolsServerPath}")
+
+		local pathConverterBinary;
+		if isCygwin;
+		then
+			pathConverterBinary="cygpath"
+		elif isWSL;
+		then
+			pathConverterBinary="wslpath"
+		fi
+
+		if [ -n "${pathConverterBinary}" ]; then
+			symbolsServerPath=$(${pathConverterBinary} -a -u "${symbolsServerPath}")
 		fi
 		if [ ! -d "${symbolsServerPath}" ];
 		then
 			echo "FAILED: Server path does not exist: '${symbolsServerPath}'"
 			return
 		fi
-		if isCygwin; then
-			symbolsServerPath=$(cygpath -a -w "${symbolsServerPath}")
+		if [ -n "${pathConverterBinary}" ];
+		then
+			symbolsServerPath=$(${pathConverterBinary} -a -w "${symbolsServerPath}")
 		fi
 
 		local symstorePath="${params["symbols_symstore_path"]}"
@@ -93,8 +104,13 @@ deploySymbols()
 			echo "FAILED: 'symbols_symstore_path' variable not set in ${configFile}"
 			return
 		fi
-		if isCygwin; then
-			symstorePath=$(cygpath -a -u "${symstorePath}")
+		if [ -n "${pathConverterBinary}" ];
+		then
+			symstorePath=$(${pathConverterBinary} -a -u "${symstorePath}")
+			if [ $? -ne 0 ]; then
+				echo "FAILED: 'symbols_symstore_path' variable is not a valid path in WSL: '${symstorePath}'"
+				return
+			fi
 		fi
 		if [ ! -f "${symstorePath}" ];
 		then
