@@ -76,7 +76,7 @@ deploySymbols()
 			return
 		fi
 
-		local pathConverterBinary;
+		local pathConverterBinary
 		if isCygwin;
 		then
 			pathConverterBinary="cygpath"
@@ -85,17 +85,15 @@ deploySymbols()
 			pathConverterBinary="wslpath"
 		fi
 
+		local symbolsServerPathUnix="${symbolsServerPath}"
 		if [ -n "${pathConverterBinary}" ]; then
-			symbolsServerPath=$(${pathConverterBinary} -a -u "${symbolsServerPath}")
+			symbolsServerPathUnix=$(${pathConverterBinary} -a -u "${symbolsServerPath}")
 		fi
-		if [ ! -d "${symbolsServerPath}" ];
+		# Validate the path using the unix path as we are running in a bash shell but the provided path is in Windows format (because the symstore command expects it)
+		if [ ! -d "${symbolsServerPathUnix}" ];
 		then
-			echo "FAILED: Server path does not exist: '${symbolsServerPath}'"
+			echo "FAILED: Server path does not exist: '${symbolsServerPath}' (unix path: '${symbolsServerPathUnix}')"
 			return
-		fi
-		if [ -n "${pathConverterBinary}" ];
-		then
-			symbolsServerPath=$(${pathConverterBinary} -a -w "${symbolsServerPath}")
 		fi
 
 		local symstorePath="${params["symbols_symstore_path"]}"
