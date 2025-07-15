@@ -464,7 +464,7 @@ removeDuplicates supportedArchs
 if [ $listArchs -eq 1 ]; then
 	echo "Supported archs for platform ${platform} (Default arch marked with [*]):"
 	for arch in "${supportedArchs[@]}";	do
-		if [ $arch == $default_arch ]; then
+		if [[ " ${default_arch[@]} " =~ " ${arch} " ]]; then
 			echo " [*] $arch"
 		else
 			echo "     $arch"
@@ -480,7 +480,7 @@ fi
 
 # No arch was specified on command line, use default arch
 if [ ${#arch[*]} -eq 0 ]; then
-	arch+=("$default_arch")
+	arch=(${default_arch[@]})
 fi
 
 # Check arch(s) is(are) valid for target platform
