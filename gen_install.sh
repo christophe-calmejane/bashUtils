@@ -13,8 +13,9 @@
 #     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
 #     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
+#   extend_gi_fnc_props_summary() -> Called just before invoking gen_cmake when printing build properties summary. No return value
 
-GI_GeneratorVersion="7.0"
+GI_GeneratorVersion="7.1"
 
 echo "Install Generator version $GI_GeneratorVersion"
 echo ""
@@ -712,6 +713,29 @@ fi
 if isSingleConfigurationGenerator "$generator"; then
 	gen_cmake_additional_options+=("-${buildConfig,,}")
 fi
+
+# Print build properties summary
+echo "/--------------------------\\"
+echo "| Project properties summary"
+echo "| - CMAKE VERS: $("$cmake_path" --version | grep -oP '\d+(\.\d+)+')"
+echo "| - GENERATOR: ${generator}"
+echo "| - PLATFORM: ${platform}"
+echo "| - ARCH: ${arch[@]}"
+if [ ! -z "${toolset}" ]; then
+	echo "| - TOOLSET: ${toolset}"
+fi
+if [ ! -z "${toolchain}" ]; then
+	echo "| - TOOLCHAIN: ${toolchain}"
+fi
+if [ ! -z "${buildConfig}" ]; then
+	echo "| - BUILD TYPE: ${buildConfig}"
+fi
+if [[ $(type -t extend_gi_fnc_props_summary) == function ]]; then
+	extend_gi_fnc_props_summary
+fi
+echo "\\--------------------------/"
+echo ""
+
 
 # Compilation stuff
 if [ $verbose -eq 1 ]; then

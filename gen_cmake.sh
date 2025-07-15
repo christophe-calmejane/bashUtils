@@ -666,8 +666,9 @@ if [[ $(type -t extend_gc_fnc_precmake) == function ]]; then
 	extend_gc_fnc_precmake
 fi
 
+# Print build properties summary
 echo "/--------------------------\\"
-echo "| Generating cmake project"
+echo "| Project properties summary"
 echo "| - CMAKE VERS: $("$cmake_path" --version | grep -oP '\d+(\.\d+)+')"
 echo "| - GENERATOR: ${generator}"
 echo "| - PLATFORM: ${platform}"
