@@ -186,10 +186,11 @@ deliverablesFolder="_deliverables"
 verbose=0
 declare -a supportedArchs=()
 if isMac; then
-	cmake_path="/Applications/CMake.app/Contents/bin/cmake"
-	# CMake.app not found, use cmake from the path
-	if [ ! -f "${cmake_path}" ]; then
-		cmake_path="cmake"
+	cmake_path="cmake"
+	# cmake from the path not found, try CMake.app
+	which "${cmake_path}" &> /dev/null
+	if [ $? -ne 0 ]; then
+		cmake_path="/Applications/CMake.app/Contents/bin/cmake"
 	fi
 	generator="Xcode"
 	# If a default architecture is set, use it. Otherwise, use the host architecture
