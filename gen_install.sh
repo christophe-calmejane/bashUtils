@@ -8,14 +8,15 @@
 #     - default_VisualGenerator -> Visual Studio version to use. Default is "Visual Studio 17 2022"
 #     - default_VisualToolset -> Visual Studio toolset to use. Default is "v143"
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
-#     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86"
+#     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86" (legacy parameter, replaced by default_buildArch for all platforms)
+#     - default_buildArch -> Default build architecture to use. Default is the host architecture (x86, x64, arm64, etc.)
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 #     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
 #     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
 #   extend_gi_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
 #   extend_gi_fnc_props_summary() -> Called just before invoking gen_cmake when printing build properties summary. No return value
 
-GI_GeneratorVersion="7.1"
+GI_GeneratorVersion="7.2"
 
 echo "Install Generator version $GI_GeneratorVersion"
 echo ""
@@ -159,13 +160,18 @@ deploySymbols()
 default_VisualGenerator="Visual Studio 17 2022"
 default_VisualToolset="v143"
 default_VisualToolchain="x64"
-default_VisualArch="x86"
 default_keyDigits=2
 default_betaTagName="-beta"
 
 # Check for defaults override
 if [[ $(type -t extend_gi_fnc_defaults) == function ]]; then
 	extend_gi_fnc_defaults
+fi
+
+# Sanity check for legacy parameters
+if [ ! -z "$default_VisualArch" ]; then
+	echo "ERROR: The 'default_VisualArch' parameter from '.defaults.sh' file is deprecated. Use 'default_buildArch' instead."
+	exit 4
 fi
 
 #
@@ -186,7 +192,12 @@ if isMac; then
 		cmake_path="cmake"
 	fi
 	generator="Xcode"
-	getMachineArch default_arch
+	# If a default architecture is set, use it. Otherwise, use the host architecture
+	if [ -z "$default_buildArch" ]; then
+		getMachineArch default_arch
+	else
+		default_arch="$default_buildArch"
+	fi
 	supportedArchs+=("x64")
 	supportedArchs+=("arm64")
 else
@@ -196,13 +207,18 @@ else
 		generator="$default_VisualGenerator"
 		toolset="$default_VisualToolset"
 		toolchain="$default_VisualToolchain"
-		default_arch="$default_VisualArch"
+		default_arch="$default_buildArch"
 		supportedArchs+=("x86")
 		supportedArchs+=("x64")
 	else
 		cmake_path="cmake"
 		generator="Unix Makefiles"
-		getMachineArch default_arch
+		# If a default architecture is set, use it. Otherwise, use the host architecture
+		if [ -z "$default_buildArch" ]; then
+			getMachineArch default_arch
+		else
+			default_arch="$default_buildArch"
+		fi
 		supportedArchs+=("${default_arch}")
 	fi
 fi
