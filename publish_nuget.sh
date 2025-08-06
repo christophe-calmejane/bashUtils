@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Useful script to publish a C# NuGet package
 
-PN_Version="1.1"
+PN_Version="1.2"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
@@ -23,6 +23,7 @@ nugetSource=""
 nugetApiKey=""
 libName=""
 doRebuild=1
+force_arch=""
 add_cmake_opt=()
 
 while [ $# -gt 0 ]
@@ -36,8 +37,9 @@ do
 			echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
 			echo " -c <config> -> Configuration type (Default: ${defaultConfigType})"
 			echo " -s <source> -> NuGet source (Mandatory)"
-			echo " -k <apiKey -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
+			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
 			echo " -l <libName> -> Library name (Mandatory)"
+			echo " -arch <arch> -> Architecture to build (Default: x64 on Windows, all archs on macOS, x64 on Linux)"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
 			exit 3
 			;;
@@ -80,6 +82,14 @@ do
 				exit 4
 			fi
 			libName="$1"
+			;;
+		-arch)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -arch option, see help (-h)"
+				exit 4
+			fi
+			force_arch="$1"
 			;;
 		-no-rebuild)
 			doRebuild=0
@@ -132,17 +142,33 @@ add_cmake_opt+=("-DNUGET_PUBLISH_SOURCE_URL=$nugetSource" "-DNUGET_PUBLISH_API_K
 # Additional gen_cmake parameters
 declare -a params=()
 
-# On windows, use x64 architecture
-if isWindows; then
-	params+=("-arch" "x64")
-# On macOS, use all archs and Ninja generator
-elif isMac; then
-	params+=("-all-archs") # Force multi-arch build
+# Architecture to build
+if [ -n "$force_arch" ]; then
+	params+=("-arch" "$force_arch")
+else
+	# On windows, use x64 architecture
+	if isWindows; then
+		params+=("-arch" "x64")
+	# On macOS, use all archs and Ninja generator
+	elif isMac; then
+		params+=("-all-archs") # Force multi-arch build
+		params+=("-c" "Ninja")
+		params+=("-${configType,,}")
+	# On Linux, use x64 architecture and Ninja generator
+	elif isLinux; then
+		params+=("-arch" "x64")
+		params+=("-c" "Ninja")
+		params+=("-${configType,,}")
+	fi
+fi
+
+# Build config
+# On macOS, use Ninja generator
+if isMac; then
 	params+=("-c" "Ninja")
 	params+=("-${configType,,}")
-# On Linux, use x64 architecture and Ninja generator
+# On Linux, use Ninja generator
 elif isLinux; then
-	params+=("-arch" "x64")
 	params+=("-c" "Ninja")
 	params+=("-${configType,,}")
 fi
