@@ -1,10 +1,32 @@
 #!/usr/bin/env bash
 # Useful script to publish a C# NuGet package
 
-PN_Version="1.2"
+PN_Version="1.3"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
+
+# Check if selfFolderPath is defined
+if [ -z "$selfFolderPath" ]; then
+	echo "ERROR: selfFolderPath variable not set. Please set it before calling this script."
+	exit 1
+fi
+# Check if selfFolderPath is absolute
+if [[ "$selfFolderPath" != /* ]]; then
+	echo "ERROR: selfFolderPath variable is not absolute. Please set it to an absolute path before calling this script."
+	exit 1
+fi
+# Check if selfFolderPath is a directory
+if [ ! -d "$selfFolderPath" ]; then
+	echo "ERROR: selfFolderPath variable is not a directory. Please set it to an absolute path to a directory before calling this script."
+	exit 1
+fi
+# Locally store selfFolderPath for later use
+bu_pn_callerFolderPath="$selfFolderPath"
+# Check if bu_pn_callerFolderPath ends with /
+if [[ "${bu_pn_callerFolderPath: -1}" != "/" ]]; then
+	bu_pn_callerFolderPath="$bu_pn_callerFolderPath/"
+fi
 
 # Get absolute folder for this script
 bu_pn_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absolute path
@@ -25,6 +47,7 @@ libName=""
 doRebuild=1
 force_arch=""
 add_cmake_opt=()
+doCleanup=1
 
 while [ $# -gt 0 ]
 do
@@ -40,6 +63,7 @@ do
 			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
 			echo " -l <libName> -> Library name (Mandatory)"
 			echo " -arch <arch> -> Architecture to build (Default: x64 on Windows, all archs on macOS, x64 on Linux)"
+			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
 			exit 3
 			;;
@@ -91,6 +115,9 @@ do
 			fi
 			force_arch="$1"
 			;;
+		-no-clean)
+			doCleanup=0
+			;;
 		-no-rebuild)
 			doRebuild=0
 			;;
@@ -115,12 +142,6 @@ do
 	esac
 	shift
 done
-
-# Error if the output folder already exists and doRebuild is set
-if [[ -d $outputFolder && $doRebuild -eq 1 ]]; then
-	echo "Output folder already exists ($outputFolder). Please remove it before running this script."
-	exit 1
-fi
 
 # Error if the nugetSource is empty
 if [ -z "$nugetSource" ]; then
@@ -171,6 +192,27 @@ if isMac; then
 elif isLinux; then
 	params+=("-c" "Ninja")
 	params+=("-${configType,,}")
+fi
+
+# Cleanup routine
+cleanup_main()
+{
+	if [[ $doCleanup -eq 1 && $1 -eq 0 ]]; then
+		echo -n "Cleaning... "
+		sleep 2
+		rm -rf "${bu_pn_callerFolderPath}${outputFolder}"
+		echo "done"
+	else
+		echo "Not cleaning up as requested, folder '${outputFolder}' untouched"
+	fi
+	exit $1
+}
+
+trap 'cleanup_main $?' EXIT
+
+# Cleanup previous build folders, just in case
+if [ $doRebuild -eq 1 ]; then
+	rm -rf "${bu_pn_callerFolderPath}${outputFolder}"
 fi
 
 # Generate solution
