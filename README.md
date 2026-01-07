@@ -1,5 +1,5 @@
 # Bash Utils
-Copyright (C) 2020-2025, Christophe Calmejane
+Copyright (C) 2020-2026, Christophe Calmejane
 
 # What is it?
 
