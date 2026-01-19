@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Useful script to generate an installer of a cmake application project
 # Set cmake_opt variable before calling this script to set cmake defines
 # Set selfFolderPath variable before calling this script to the absolute path of the calling script

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+# Load configuration file
 
 loadConfigFile()
 {

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Useful script to generate project files using cmake
 # Set cmake_opt variable before calling this script to set cmake defines
 # The following functions can be defined before including this script:

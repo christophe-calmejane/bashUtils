@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Useful script to publish a C# NuGet package
 
 PN_Version="1.3"

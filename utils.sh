@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Utility bash functions
 
 # Check bash version

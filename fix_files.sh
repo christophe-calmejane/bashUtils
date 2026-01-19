@@ -1,6 +1,6 @@
 #!/usr/bin/env bash 
 
-FIX_FILES_VERSION="2.2"
+FIX_FILES_VERSION="2.3"
 
 echo "Fix-Files version $FIX_FILES_VERSION"
 echo ""
@@ -61,14 +61,6 @@ do
 	shift
 done
 
-if [[ $no_root_check -eq 0 ]]; then
-	# Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
-	if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
-		echo "ERROR: Must be run from the root folder of your project (where your main CMakeLists.txt file is)"
-		exit 1
-	fi
-fi
-
 function applyFormat()
 {
 	local filePattern="$1"
@@ -104,7 +96,37 @@ function applyFileAttributes()
 	do
 		local fileName="${filePath##*/}"
 		if [[ $fileName =~ $filePattern ]]; then
-			chmod -f "$attribs" "$filePath" &> /dev/null
+			local actualAttribs="$attribs"
+
+			# Auto mode: detect if file should be executable
+			if [[ "$attribs" == "auto" ]]; then
+				# Read first 3 bytes to check for UTF-8 BOM (EF BB BF)
+				local firstBytes=$(xxd -p -l 3 "$filePath" 2>/dev/null)
+				local hasShebang=0
+
+				if [[ "$firstBytes" == "efbbbf" ]]; then
+					# UTF-8 BOM detected, check after BOM for shebang
+					local afterBOM=$(dd if="$filePath" bs=1 skip=3 count=2 2>/dev/null)
+					if [[ "$afterBOM" == "#!" ]]; then
+						hasShebang=1
+					fi
+				else
+					# No BOM, check first 2 bytes directly
+					local firstChars=$(head -c 2 "$filePath" 2>/dev/null)
+					if [[ "$firstChars" == "#!" ]]; then
+						hasShebang=1
+					fi
+				fi
+
+				# Set attributes based on shebang presence
+				if [[ $hasShebang -eq 1 ]]; then
+					actualAttribs="a+x"
+				else
+					actualAttribs="a-x"
+				fi
+			fi
+
+			chmod -f "$actualAttribs" "$filePath" &> /dev/null
 			count=$(($count + 1))
 		fi
 	done
@@ -209,6 +231,7 @@ if [ $do_chmod -eq 1 ]; then
 		applyFileAttributes ".+\.[chi]pp(\.in)?$" "a-x" listOfAllFiles "C++"
 		applyFileAttributes ".+\.[ch](\.in)?$" "a-x" listOfAllFiles "C"
 		applyFileAttributes ".+\.mm(\.in)?$" "a-x" listOfAllFiles "Objective-C"
+		applyFileAttributes ".+\.cs(\.in)?$" "a-x" listOfAllFiles "C#"
 		applyFileAttributes ".+\.js(\.in)?$" "a-x" listOfAllFiles "JavaScript"
 		applyFileAttributes ".+\.txt(\.in)?$" "a-x" listOfAllFiles "Text"
 		applyFileAttributes ".+\.cmake(\.in)?$" "a-x" listOfAllFiles "CMake"
@@ -228,9 +251,13 @@ if [ $do_chmod -eq 1 ]; then
 		applyFileAttributes ".+\.png$" "a-x" listOfAllFiles "PNG Image"
 
 		# Other files (executable)
-		applyFileAttributes ".+\.sh$" "a+x" listOfAllFiles "Shell Script"
-		applyFileAttributes ".+\.bat$" "a+x" listOfAllFiles "Batch Script"
 		applyFileAttributes "^(pre|post)install(\.in)?$" "a+x" listOfAllFiles "PKG Script"
+		applyFileAttributes ".+\.bat$" "a+x" listOfAllFiles "Batch Script"
+
+		# Auto detect executable scripts
+		applyFileAttributes ".+\.sh$" "auto" listOfAllFiles "Shell Script"
+		applyFileAttributes ".+\.lua$" "auto" listOfAllFiles "Lua Script"
+		applyFileAttributes ".+\.py$" "auto" listOfAllFiles "Python Script"
 		
 		# Binary files (executable)
 		applyFileAttributes ".+\.exe$" "a+x" listOfAllFiles "EXEcutable"
