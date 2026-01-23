@@ -1,4 +1,8 @@
-# Plugins are available for the following editors and IDE: Atom, Eclipse, Emacs, Notepad++, SublimeText, Vim, VisualStudio, Xcode (see http://editorconfig.org/)
+﻿# Plugins are available for the following editors and IDE: Atom, Eclipse, Emacs, Notepad++, SublimeText, Vim, VisualStudio, Xcode (see http://editorconfig.org/)
+# Version 1.0.8
+
+# Topmost EditorConfig file
+root = true
 
 # Force Makefile files settings (just in case someone changes the default settings)
 [Makefile]
@@ -28,13 +32,32 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{c,cpp,h,hpp}]
+# Force JSON files settings
+[*.json]
 charset = utf-8
 indent_style = tab
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+# Force python files settings
+[*.py]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Force code (C, C++, C#) files settings
+[*.{c,cpp,h,hpp,cs,xaml}]
+charset = utf-8
+indent_style = tab
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Force Markdown files settings
 [*.md]
 indent_style = space
 indent_size = 1
