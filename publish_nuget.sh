@@ -36,6 +36,15 @@ bu_pn_selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the
 # Default values
 defaultOutputFolder="_publish"
 defaultConfigType="Release"
+cmake_path=""
+
+# Find cmake path
+getCmakePath "cmake_path"
+which "${cmake_path}" &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "CMake not found. Please add CMake binary folder in your PATH environment variable."
+	exit 1
+fi
 
 # Parse variables
 outputFolder="$defaultOutputFolder"
@@ -218,4 +227,4 @@ fi
 . "${bu_pn_selfFolderPath}gen_cmake.sh" -o $outputFolder ${params[@]} -- "${add_cmake_opt[@]}"
 
 # Build and publish
-cmake --build $outputFolder --target $publishTargetName --config $configType
+"$cmake_path" --build $outputFolder --target $publishTargetName --config $configType

@@ -624,3 +624,22 @@ getQtDir()
 
 	_retval="${qtDir}"
 }
+
+getCmakePath()
+{
+	local _retval="$1"
+
+	# Use cmake from the path by default
+	local result="cmake"
+	if isMac; then
+		which "${result}" &> /dev/null
+		# If cmake from the path not found, try CMake.app
+		if [ $? -ne 0 ]; then
+			result="/Applications/CMake.app/Contents/bin/cmake"
+		fi
+	elif isWindows; then
+		# Use cmake.exe on Windows
+		result="cmake.exe"
+	fi
+	eval $_retval="'${result}'"
+}
