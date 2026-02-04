@@ -64,11 +64,6 @@ defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<tool
 declare -a supportedArchs=()
 
 getCmakePath cmake_path
-which "${cmake_path}" &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "CMake not found. Please add CMake binary folder in your PATH environment variable."
-	exit 1
-fi
 
 if isMac; then
 	generator="Xcode"

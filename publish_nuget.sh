@@ -40,11 +40,6 @@ cmake_path=""
 
 # Find cmake path
 getCmakePath "cmake_path"
-which "${cmake_path}" &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "CMake not found. Please add CMake binary folder in your PATH environment variable."
-	exit 1
-fi
 
 # Parse variables
 outputFolder="$defaultOutputFolder"

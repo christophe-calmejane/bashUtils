@@ -628,18 +628,27 @@ getQtDir()
 getCmakePath()
 {
 	local _retval="$1"
+	local cmakeCmd="cmake"
+	local cmakeFullPath
 
-	# Use cmake from the path by default
-	local result="cmake"
-	if isMac; then
-		which "${result}" &> /dev/null
-		# If cmake from the path not found, try CMake.app
-		if [ $? -ne 0 ]; then
-			result="/Applications/CMake.app/Contents/bin/cmake"
-		fi
-	elif isWindows; then
-		# Use cmake.exe on Windows
-		result="cmake.exe"
+	# Use cmake.exe on Windows
+	if isWindows; then
+		cmakeCmd="cmake.exe"
 	fi
-	eval $_retval="'${result}'"
+
+	# Try to find cmake in PATH
+	cmakeFullPath=$(which "${cmakeCmd}" 2> /dev/null)
+
+	# On Mac, if not found in PATH, try CMake.app
+	if [ -z "${cmakeFullPath}" ] && isMac && [ -f "/Applications/CMake.app/Contents/bin/cmake" ]; then
+		cmakeFullPath="/Applications/CMake.app/Contents/bin/cmake"
+	fi
+
+	# Validate that cmake was found
+	if [ -z "${cmakeFullPath}" ]; then
+		echo "CMake not found. Please add CMake binary folder in your PATH environment variable."
+		exit 1
+	fi
+
+	eval $_retval="'${cmakeFullPath}'"
 }
