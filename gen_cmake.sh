@@ -8,6 +8,7 @@
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
 #     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86" (legacy parameter, replaced by default_buildArch for all platforms)
 #     - default_buildArch -> Default build architecture to use. Default is the host architecture (x86, x64, arm64, etc.)
+#     - default_signingTool -> The signing tool to use for Windows code signing. Supported tools: signtool and azuresigntool. Default is "signtool"
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 #     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
 #     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
@@ -33,6 +34,7 @@ envSanityChecks "grep"
 default_VisualGenerator="Visual Studio 17 2022"
 default_VisualToolset="v143"
 default_VisualToolchain="x64"
+default_signingTool="signtool"
 default_signtoolOptions="/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 default_keyDigits=2
 default_betaTagName="-beta"
@@ -115,6 +117,7 @@ signingId=""
 doSign=0
 listArchs=0
 useAllArchs=0
+signingTool="$default_signingTool"
 signtoolOptions="$default_signtoolOptions"
 key_digits=$((10#$default_keyDigits))
 key_postfix=""
@@ -124,6 +127,7 @@ betaTagName="${default_betaTagName}"
 # Override defaults using config file, if loaded
 if [[ ! -z $configFileLoaded && $configFileLoaded -eq 1 ]]; then
 	signingId="${params["identity"]}"
+	signingTool="${params["signing_tool"]}"
 	signtoolOptions=${params["signtool_options"]}
 fi
 
@@ -147,6 +151,7 @@ do
 				echo " -t <visual toolset> -> Force visual toolset (Default: $toolset)"
 				echo " -tc <visual toolchain> -> Force visual toolchain (Default: $toolchain)"
 				echo " -clang -> Compile using clang for VisualStudio"
+				echo " -signing-tool <tool> -> Windows code signing tool to use (Default: $default_signingTool)"
 				echo " -signtool-opt <options> -> Windows code signing options (Default: $default_signtoolOptions)"
 			fi
 			if isMac; then
@@ -249,6 +254,23 @@ do
 				useVSclang=1
 			else
 				echo "ERROR: -clang option is only supported on Windows platform"
+				exit 4
+			fi
+			;;
+		-signing-tool)
+			if isWindows; then
+				shift
+				if [ $# -lt 1 ]; then
+					echo "ERROR: Missing parameter for -signing-tool option, see help (-h)"
+					exit 4
+				fi
+				signingTool="$1"
+				if [[ "$signingTool" != "signtool" && "$signingTool" != "azuresigntool" ]]; then
+					echo "ERROR: Invalid signing tool specified for -signing-tool option, supported values are 'signtool' and 'azuresigntool'"
+					exit 4
+				fi
+			else
+				echo "ERROR: -signing-tool option is only supported on Windows platform"
 				exit 4
 			fi
 			;;
@@ -625,6 +647,9 @@ if [ $doSign -eq 1 ]; then
 	add_cmake_opt+=("-DENABLE_CODE_SIGNING=TRUE")
 	# Set signtool options if signing enabled on windows
 	if isWindows; then
+		if [ ! -z "$signingTool" ]; then
+			add_cmake_opt+=("-DCU_SIGNING_TOOL=$signingTool")
+		fi
 		if [ ! -z "$signtoolOptions" ]; then
 			add_cmake_opt+=("-DCU_SIGNTOOL_OPTIONS=$signtoolOptions")
 		fi

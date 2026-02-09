@@ -9,6 +9,7 @@
 #     - default_VisualToolchain -> Visual Studio toolchain to use. Default is "x64"
 #     - default_VisualArch -> Visual Studio target architecture to use. Default is "x86" (legacy parameter, replaced by default_buildArch for all platforms)
 #     - default_buildArch -> Default build architecture to use. Default is the host architecture (x86, x64, arm64, etc.)
+#     - default_signingTool -> The signing tool to use for Windows code signing. Supported tools: signtool and azuresigntool. Default is "signtool"
 #     - default_signtoolOptions -> Options for signing binaries. Default is "/a /sm /q /fd sha256 /tr http://timestamp.sectigo.com /td sha256"
 #     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
 #     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
@@ -573,12 +574,20 @@ loadConfigFile
 if [ $doSign -eq 1 ]; then
 	gen_cmake_additional_options+=("-sign")
 
-	# Check if signtool options are specified on windows
+	# Check if signing tool and signtool options are specified on windows
 	if isWindows; then
+		signingTool=${params["signing_tool"]}
+		if [ -z "$signingTool" ]; then
+			echo "ERROR: windows requires a signing tool to be set. Specify it in the ${configFile} file"
+			exit 4
+		fi
 		signtoolOptions=${params["signtool_options"]}
 		if [ -z "$signtoolOptions" ]; then
 			echo "ERROR: windows requires signtool options to be set. Specify it in the ${configFile} file"
+			exit 4
 		fi
+		gen_cmake_additional_options+=("-signing-tool")
+		gen_cmake_additional_options+=("$signingTool")
 		gen_cmake_additional_options+=("-signtool-opt")
 		gen_cmake_additional_options+=("$signtoolOptions")
 	fi
@@ -840,7 +849,7 @@ if [ $doSign -eq 1 ]; then
 	# MacOS already signed by CPack
 	if isWindows; then
 		echo -n "Signing Package..."
-		log=$(signtool.exe sign ${signtoolOptions} "${deliverablesFolder}${fullInstallerName}")
+		log=$(${signingTool} sign ${signtoolOptions} "${deliverablesFolder}${fullInstallerName}")
 		if [ $? -ne 0 ]; then
 			echo "Failed to sign package ;("
 			echo ""
