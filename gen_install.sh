@@ -576,6 +576,7 @@ if [ $doSign -eq 1 ]; then
 			echo "ERROR: windows requires signtool options to be set. Specify it in the ${configFile} file"
 			exit 4
 		fi
+		# Forward signing options to gen_cmake
 		gen_cmake_additional_options+=("-signing-tool")
 		gen_cmake_additional_options+=("$signingTool")
 		gen_cmake_additional_options+=("-signtool-opt")

@@ -13,6 +13,7 @@
 #     - default_keyDigits -> The number of digits to be used as Key for installation, comprised between 0 and 4. Default is 2
 #     - default_betaTagName -> The tag to use before the 4th digit for beta releases. Default is "-beta"
 #   extend_gc_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
+#   extend_gc_fnc_postparse() -> Called after parsing all arguments. No return value
 #   extend_gc_fnc_precmake() -> Called just before invoking cmake. The $add_cmake_opt list can be appended. No return value
 #   extend_gc_fnc_props_summary() -> Called just before invoking cmake when printing build properties summary. No return value
 
