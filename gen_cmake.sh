@@ -51,6 +51,7 @@ if [ ! -z "$default_VisualArch" ]; then
 fi
 
 # 
+cmake_path=""
 cmake_generator=""
 generator_arch=""
 platform=""
@@ -61,13 +62,10 @@ cmake_config=""
 outputFolderBasePath="_build"
 defaultOutputFolder="${outputFolderBasePath}_<platform>_<arch>_<generator>_<toolset>_<config>"
 declare -a supportedArchs=()
+
+getCmakePath cmake_path
+
 if isMac; then
-	cmake_path="cmake"
-	# cmake from the path not found, try CMake.app
-	which "${cmake_path}" &> /dev/null
-	if [ $? -ne 0 ]; then
-		cmake_path="/Applications/CMake.app/Contents/bin/cmake"
-	fi
 	generator="Xcode"
 	# If a default architecture is set, use it. Otherwise, use the host architecture
 	if [ -z "$default_buildArch" ]; then
@@ -80,7 +78,6 @@ if isMac; then
 else
 	# Use cmake from the path
 	if isWindows; then
-		cmake_path="cmake.exe"
 		generator="$default_VisualGenerator"
 		toolset="$default_VisualToolset"
 		toolchain="$default_VisualToolchain"
@@ -88,7 +85,6 @@ else
 		supportedArchs+=("x86")
 		supportedArchs+=("x64")
 	else
-		cmake_path="cmake"
 		generator="Unix Makefiles"
 		# If a default architecture is set, use it. Otherwise, use the host architecture
 		if [ -z "$default_buildArch" ]; then
@@ -100,12 +96,6 @@ else
 	fi
 fi
 getOS platform
-
-which "${cmake_path}" &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "CMake not found. Please add CMake binary folder in your PATH environment variable."
-	exit 1
-fi
 
 # Parse variables
 outputFolder=""
