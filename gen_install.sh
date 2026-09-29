@@ -593,6 +593,12 @@ if [ $doSign -eq 1 ]; then
 		fi
 		gen_cmake_additional_options+=("-id")
 		gen_cmake_additional_options+=("$identityString")
+
+		provisioningProfile="${params["provisioning_profile"]}"
+		if [ ! -z "$provisioningProfile" ]; then
+			gen_cmake_additional_options+=("-provisioning-profile")
+			gen_cmake_additional_options+=("$provisioningProfile")
+		fi
 	fi
 fi
 

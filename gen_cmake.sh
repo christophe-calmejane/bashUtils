@@ -105,6 +105,7 @@ add_cmake_opt=()
 useVSclang=0
 hasTeamId=0
 signingId=""
+provisioningProfile=""
 doSign=0
 listArchs=0
 useAllArchs=0
@@ -118,6 +119,7 @@ betaTagName="${default_betaTagName}"
 # Override defaults using config file, if loaded
 if [[ ! -z $configFileLoaded && $configFileLoaded -eq 1 ]]; then
 	signingId="${params["identity"]}"
+	provisioningProfile="${params["provisioning_profile"]}"
 	signingTool="${params["signing_tool"]}"
 	signtoolOptions=${params["signtool_options"]}
 fi
@@ -148,6 +150,7 @@ do
 			if isMac; then
 				echo " -id <Signing Identity> -> Signing identity for binary signing (full identity name inbetween the quotes, see -ids to get the list)"
 				echo " -ids -> List signing identities"
+				echo " -provisioning-profile <path> -> Provisioning profile to embed in the application bundle, required to use restricted entitlements (Default: none)"
 				echo " -t <xcode toolset> -> Force xcode toolset (Default: autodetect)"
 				echo " -ios -> Cross-compiling for iOS"
 			fi
@@ -288,6 +291,19 @@ do
 				signingId="$1"
 			else
 				echo "ERROR: -id option is only supported on macOS platform"
+				exit 4
+			fi
+			;;
+		-provisioning-profile)
+			if isMac; then
+				shift
+				if [ $# -lt 1 ]; then
+					echo "ERROR: Missing parameter for -provisioning-profile option, see help (-h)"
+					exit 4
+				fi
+				provisioningProfile="$1"
+			else
+				echo "ERROR: -provisioning-profile option is only supported on macOS platform"
 				exit 4
 			fi
 			;;
@@ -632,6 +648,15 @@ if isMac; then
 	add_cmake_opt+=("-DCU_BINARY_SIGNING_IDENTITY=$signingId")
 	add_cmake_opt+=("-DCU_INSTALLER_SIGNING_IDENTITY=$signingInstallerId")
 	add_cmake_opt+=("-DCU_TEAM_IDENTIFIER=$teamId")
+	# Provisioning profile (made absolute as cmake runs from the output folder)
+	if [ ! -z "$provisioningProfile" ]; then
+		if [ ! -f "$provisioningProfile" ]; then
+			echo "ERROR: Provisioning profile not found: $provisioningProfile"
+			exit 4
+		fi
+		getFileAbsolutePath provisioningProfile "$provisioningProfile"
+		add_cmake_opt+=("-DCU_PROVISIONING_PROFILE=$provisioningProfile")
+	fi
 fi
 
 if [ $doSign -eq 1 ]; then
