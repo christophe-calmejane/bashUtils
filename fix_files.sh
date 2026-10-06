@@ -84,6 +84,14 @@ do
 	shift
 done
 
+if [[ $no_root_check -eq 0 ]]; then
+	# Check if a .git file or folder exists (we allow submodules, thus check file and folder), as well as a root cmake file
+	if [[ ! -e ".git" || ! -f "CMakeLists.txt" ]]; then
+		echo "ERROR: Must be run from the root folder of your project (where your main CMakeLists.txt file is)"
+		exit 1
+	fi
+fi
+
 function applyFormat()
 {
 	local filePattern="$1"
