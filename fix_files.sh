@@ -70,7 +70,7 @@ do
 		--no-chmod)
 			do_chmod=0
 			;;
-		--include-sumodules)
+		--include-submodules)
 			include_submodules=1
 			;;
 		--no-root-check)
