@@ -1,6 +1,6 @@
 #!/usr/bin/env bash 
 
-FIX_FILES_VERSION="2.3"
+FIX_FILES_VERSION="2.4"
 
 echo "Fix-Files version $FIX_FILES_VERSION"
 echo ""
@@ -15,6 +15,8 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 envSanityChecks "awk"
 
 do_clang_format=1
+clang_format_path="clang-format"
+check_clang_format_version=1
 do_line_endings=1
 do_chmod=1
 include_submodules=0
@@ -28,6 +30,8 @@ do
 			echo " -h -> Display this help"
 			echo " --version -> Display version"
 			echo " --no-clang-format -> Do not run clang-format on source files (Default: Run clang-format, but only if .clang-format file found)"
+			echo " --clang-format-path <path> -> Path to the clang-format binary to use (Default: clang-format found in PATH)"
+			echo " --no-clang-format-version-check -> Do not check clang-format version (Default: Check)"
 			echo " --no-line-endings -> Do not force line endings on source files (Default: Change line-endings)"
 			echo " --no-chmod -> Do not run chmod on all files to fix executable bit (Default: Run chmod)"
 			echo " --include-submodules -> Include submodules files for selected fixes (Default: Do not include submodules)"
@@ -40,6 +44,25 @@ do
 			;;
 		--no-clang-format)
 			do_clang_format=0
+			;;
+		--clang-format-path)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for --clang-format-path option, see help (-h)"
+				exit 4
+			fi
+			clang_format_path="$1"
+			if [ ! -f "$clang_format_path" ]; then
+				echo "ERROR: Specified clang-format binary not found: $clang_format_path"
+				exit 4
+			fi
+			if [ ! -x "$clang_format_path" ]; then
+				echo "ERROR: Specified clang-format binary is not executable: $clang_format_path"
+				exit 4
+			fi
+			;;
+		--no-clang-format-version-check)
+			check_clang_format_version=0
 			;;
 		--no-line-endings)
 			do_line_endings=0
@@ -74,7 +97,7 @@ function applyFormat()
 	do
 		local fileName="${filePath##*/}"
 		if [[ $fileName =~ $filePattern ]]; then
-			clang-format -i -style=file "$filePath" &> /dev/null
+			"$clang_format_path" -i -style=file "$filePath" &> /dev/null
 			count=$(($count + 1))
 		fi
 	done
@@ -180,13 +203,15 @@ listFiles listOfAllFiles
 
 # Clang-format files
 if [[ $do_clang_format -eq 1 && -f ./.clang-format ]]; then
-	which clang-format &> /dev/null
+	which "$clang_format_path" &> /dev/null
 	if [ $? -eq 0 ]; then
-		cf_version="$(clang-format --version)"
-		regex="clang-format version 7\.0\.0 \(tags\/RELEASE_700\/final[ 0-9]*\/WithWrappingBeforeLambdaBodyPatch\)"
-		if [[ ! "$cf_version" =~ $regex ]]; then
-			echo "Incorrect clang-format: Version 7.0.0 with WrappingBeforeLambdaBody patch required (found: $cf_version)"
-			exit 1
+		if [ $check_clang_format_version -eq 1 ]; then
+			cf_version="$("$clang_format_path" --version)"
+			regex="clang-format version 7\.0\.0 \(tags\/RELEASE_700\/final[ 0-9]*\/WithWrappingBeforeLambdaBodyPatch\)"
+			if [[ ! "$cf_version" =~ $regex ]]; then
+				echo "Incorrect clang-format: Version 7.0.0 with WrappingBeforeLambdaBody patch required (found: $cf_version)"
+				exit 1
+			fi
 		fi
 		applyFormat ".+\.[chi]pp(\.in)?$" listOfAllFiles "C++"
 		applyFormat ".+\.[ch](\.in)?$" listOfAllFiles "C"
