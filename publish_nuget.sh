@@ -1,6 +1,6 @@
-# Useful script to publish a C# NuGet package
+# Useful script to publish a NuGet package
 
-PN_Version="1.3"
+PN_Version="1.4"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
@@ -47,6 +47,7 @@ configType="$defaultConfigType"
 nugetSource=""
 nugetApiKey=""
 libName=""
+publishTargetName=""
 doRebuild=1
 force_arch=""
 add_cmake_opt=()
@@ -64,7 +65,8 @@ do
 			echo " -c <config> -> Configuration type (Default: ${defaultConfigType})"
 			echo " -s <source> -> NuGet source (Mandatory)"
 			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
-			echo " -l <libName> -> Library name (Mandatory)"
+			echo " -l <libName> -> C# library name (Mandatory unless -t is used)"
+			echo " -t <target> -> CMake NuGet push target (Mandatory unless -l is used)"
 			echo " -arch <arch> -> Architecture to build (Default: x64 on Windows, all archs on macOS, x64 on Linux)"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
@@ -110,6 +112,14 @@ do
 			fi
 			libName="$1"
 			;;
+		-t)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -t option, see help (-h)"
+				exit 4
+			fi
+			publishTargetName="$1"
+			;;
 		-arch)
 			shift
 			if [ $# -lt 1 ]; then
@@ -152,13 +162,18 @@ if [ -z "$nugetSource" ]; then
 	exit 1
 fi
 
-# Error if the libName is empty
-if [ -z "$libName" ]; then
-	echo "Library name is mandatory, please provide it using -l option."
+# Require exactly one package target selection
+if [ -z "$libName" ] && [ -z "$publishTargetName" ]; then
+	echo "Library name (-l) or NuGet push target (-t) is mandatory."
 	exit 1
 fi
-
-publishTargetName=${libName}-csharp-nuget-push
+if [ -n "$libName" ] && [ -n "$publishTargetName" ]; then
+	echo "Options -l and -t are mutually exclusive."
+	exit 1
+fi
+if [ -z "$publishTargetName" ]; then
+	publishTargetName=${libName}-csharp-nuget-push
+fi
 
 # Additional cmake parameters
 add_cmake_opt+=("-DNUGET_PUBLISH_SOURCE_URL=$nugetSource" "-DNUGET_PUBLISH_API_KEY=$nugetApiKey")
@@ -219,7 +234,7 @@ if [ $doRebuild -eq 1 ]; then
 fi
 
 # Generate solution
-. "${bu_pn_selfFolderPath}gen_cmake.sh" -o $outputFolder ${params[@]} -- "${add_cmake_opt[@]}"
+. "${bu_pn_selfFolderPath}gen_cmake.sh" -o "$outputFolder" "${params[@]}" -- "${add_cmake_opt[@]}"
 
 # Build and publish
-"$cmake_path" --build $outputFolder --target $publishTargetName --config $configType
+"$cmake_path" --build "$outputFolder" --target "$publishTargetName" --config "$configType"
