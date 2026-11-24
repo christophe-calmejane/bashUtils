@@ -1,6 +1,6 @@
 # Useful script to publish a NuGet package
 
-PN_Version="1.4"
+PN_Version="1.5"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
@@ -48,6 +48,9 @@ nugetSource=""
 nugetApiKey=""
 libName=""
 publishTargetName=""
+packageName=""
+metaVersion=""
+doMeta=0
 doRebuild=1
 force_arch=""
 add_cmake_opt=()
@@ -67,6 +70,9 @@ do
 			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
 			echo " -l <libName> -> C# library name (Mandatory unless -t is used)"
 			echo " -t <target> -> CMake NuGet push target (Mandatory unless -l is used)"
+			echo " -n <packageName> -> Base name of the published packages, used by -meta (Default: the -l value)"
+			echo " -meta -> Don't build anything, generate and publish the meta-package referencing all the RID specific packages already published on the source (see publish_nuget_meta.sh)"
+			echo " -v <version> -> Version of the meta-package, only used with -meta (Default: highest version found)"
 			echo " -arch <arch> -> Architecture to build (Default: x64 on Windows, all archs on macOS, x64 on Linux)"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
@@ -119,6 +125,25 @@ do
 				exit 4
 			fi
 			publishTargetName="$1"
+			;;
+		-n)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -n option, see help (-h)"
+				exit 4
+			fi
+			packageName="$1"
+			;;
+		-meta)
+			doMeta=1
+			;;
+		-v)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -v option, see help (-h)"
+				exit 4
+			fi
+			metaVersion="$1"
 			;;
 		-arch)
 			shift
@@ -173,6 +198,29 @@ if [ -n "$libName" ] && [ -n "$publishTargetName" ]; then
 fi
 if [ -z "$publishTargetName" ]; then
 	publishTargetName=${libName}-csharp-nuget-push
+fi
+
+# Meta-package mode: nothing to build, delegate to the dedicated script (run from the caller folder so its NuGet.config files are used)
+if [ $doMeta -eq 1 ]; then
+	if [ -z "$packageName" ]; then
+		packageName="$libName"
+	fi
+	if [ -z "$packageName" ]; then
+		echo "Package name (-n) is mandatory with -meta when -t is used."
+		exit 1
+	fi
+	declare -a metaParams=("-n" "$packageName" "-s" "$nugetSource" "-c" "$configType" "-o" "${bu_pn_callerFolderPath}${outputFolder}")
+	if [ -n "$nugetApiKey" ]; then
+		metaParams+=("-k" "$nugetApiKey")
+	fi
+	if [ -n "$metaVersion" ]; then
+		metaParams+=("-v" "$metaVersion")
+	fi
+	if [ $doCleanup -eq 0 ]; then
+		metaParams+=("-no-clean")
+	fi
+	(cd "$bu_pn_callerFolderPath" && "${bu_pn_selfFolderPath}publish_nuget_meta.sh" "${metaParams[@]}")
+	exit $?
 fi
 
 # Additional cmake parameters

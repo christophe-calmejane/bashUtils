@@ -51,6 +51,15 @@ Script to generate a CMake solution.
 
 Script to generate a product installer.
 
+## publish_nuget_meta.sh
+
+Script to generate and publish a NuGet meta-package (`<name>[-debug]`) referencing all the RID specific packages (`<name>[-debug]-<RID>`) already published on a NuGet source, so consumers don't need any RID logic.
+For each OS, the universal package (for example `osx`) is selected when published with the meta-package version, otherwise all the architecture specific ones (for example `osx-arm64` and `osx-x64`).
+The meta-package also keeps the layout of the native assets (subfolders of `runtimes/<RID>/native/`) in the consumer output folder.
+Run it from a folder whose `NuGet.config` files give access to the source, after all the RID specific packages of the version have been published (also available through `publish_nuget.sh -meta`).
+
+`Usage: publish_nuget_meta.sh -n <name> -s <source> [-k <apiKey>] [-c Debug|Release] [-v <version>] [-o <workFolder>] [-no-push] [-no-clean]`
+
 ## load_config_file.sh
 
 Script to load and parse a config file.
