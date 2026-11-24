@@ -7,7 +7,7 @@
 # Usage: cmake -DMETA_PACKAGE_NAME=<name> -DNUGET_SOURCE=<source> -DWORK_FOLDER=<folder> [options] -P nugetMetaPackage.cmake
 # Mandatory variables:
 #  - META_PACKAGE_NAME: Base name of the packages (the PACKAGE_NAME given to the cmakeUtils NuGet helpers, usually the project name)
-#  - NUGET_SOURCE: NuGet source URL to search the RID specific packages in and to push the meta-package to
+#  - NUGET_SOURCE: NuGet source (name of a configured source, URL or folder) to search the RID specific packages in and to push the meta-package to
 #  - WORK_FOLDER: Absolute path of the temporary folder used to generate the meta-package (removed and recreated)
 # Optional variables:
 #  - NUGET_API_KEY: NuGet API key used to push the meta-package (credentials from the NuGet.config files are used otherwise)
@@ -176,6 +176,48 @@ function(bu_meta_get_nuspec_element NUSPEC_CONTENT TAG OUTPUT_VARIABLE)
 endfunction()
 
 ###############################################################################
+# Set OUTPUT_VARIABLE to the URL (or absolute folder) of NUGET_SOURCE, which can be the name of a configured source.
+# 'dotnet restore --source' (contrary to 'dotnet package search' and 'dotnet nuget push') does not resolve source names, and resolves relative folders against the project folder.
+function(bu_meta_resolve_source_location OUTPUT_VARIABLE)
+	execute_process(
+		COMMAND "${CMAKE_COMMAND}" -E env DOTNET_CLI_UI_LANGUAGE=en "${DOTNET_EXECUTABLE}" nuget list source --format detailed
+		WORKING_DIRECTORY "${SEARCH_FOLDER}"
+		OUTPUT_VARIABLE LIST_OUTPUT
+		ERROR_VARIABLE LIST_ERROR
+		RESULT_VARIABLE LIST_RESULT
+	)
+	if(NOT LIST_RESULT EQUAL 0)
+		message(FATAL_ERROR "Failed to list the NuGet sources:\n${LIST_OUTPUT}${LIST_ERROR}")
+	endif()
+	# Each source is listed as '  <index>.  <name> [Enabled|Disabled]' followed by its location on the next line
+	string(TOLOWER "${NUGET_SOURCE}" WANTED_NAME)
+	string(REPLACE "\r" "" LIST_OUTPUT "${LIST_OUTPUT}")
+	string(REPLACE ";" "\\;" LIST_OUTPUT "${LIST_OUTPUT}")
+	string(REPLACE "\n" ";" LIST_LINES "${LIST_OUTPUT}")
+	set(NAME_MATCHED FALSE)
+	foreach(LINE IN LISTS LIST_LINES)
+		if(NAME_MATCHED)
+			string(STRIP "${LINE}" LOCATION)
+			set(${OUTPUT_VARIABLE} "${LOCATION}" PARENT_SCOPE)
+			return()
+		endif()
+		if(LINE MATCHES "^ *[0-9]+\\. +(.+) \\[[A-Za-z]+\\]$")
+			string(TOLOWER "${CMAKE_MATCH_1}" SOURCE_NAME)
+			if(SOURCE_NAME STREQUAL WANTED_NAME)
+				set(NAME_MATCHED TRUE)
+			endif()
+		endif()
+	endforeach()
+	# Not a configured source name: a URL, or a local folder
+	if(NOT NUGET_SOURCE MATCHES "^[A-Za-z][A-Za-z0-9+.-]+://")
+		get_filename_component(LOCATION "${NUGET_SOURCE}" ABSOLUTE BASE_DIR "${SEARCH_FOLDER}")
+		set(${OUTPUT_VARIABLE} "${LOCATION}" PARENT_SCOPE)
+		return()
+	endif()
+	set(${OUTPUT_VARIABLE} "${NUGET_SOURCE}" PARENT_SCOPE)
+endfunction()
+
+###############################################################################
 # Run a command from the WORKING_DIRECTORY folder, failing if it does not succeed
 function(bu_meta_run_command DESCRIPTION WORKING_DIRECTORY)
 	execute_process(
@@ -333,8 +375,9 @@ file(WRITE "${WORK_FOLDER}/MetaPackage.csproj"
 	"</Project>\n"
 )
 
-message(STATUS "Restoring the selected packages")
-bu_meta_run_command("Restoring the selected packages" "${WORK_FOLDER}" "${DOTNET_EXECUTABLE}" restore MetaPackage.csproj --source "${NUGET_SOURCE}")
+bu_meta_resolve_source_location(NUGET_SOURCE_LOCATION)
+message(STATUS "Restoring the selected packages from '${NUGET_SOURCE_LOCATION}'")
+bu_meta_run_command("Restoring the selected packages" "${WORK_FOLDER}" "${DOTNET_EXECUTABLE}" restore MetaPackage.csproj --source "${NUGET_SOURCE_LOCATION}")
 
 # Get the metadata of the meta-package from the first selected package
 file(READ "${WORK_FOLDER}/obj/project.assets.json" ASSETS_CONTENT)

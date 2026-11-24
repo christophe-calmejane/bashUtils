@@ -40,7 +40,7 @@ do
 			echo "Available options:"
 			echo " -h -> Display this help"
 			echo " -n <packageName> -> Base name of the packages, without the -debug and -<RID> suffixes (Mandatory)"
-			echo " -s <source> -> NuGet source URL to search the RID specific packages in and to push the meta-package to (Mandatory)"
+			echo " -s <source> -> NuGet source (name of a configured source, URL or folder) to search the RID specific packages in and to push the meta-package to (Mandatory)"
 			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
 			echo " -c <config> -> Configuration type, Debug adds the -debug suffix to all package IDs (Default: ${defaultConfigType})"
 			echo " -v <version> -> Version of the meta-package, must be published for at least one RID (Default: highest version found)"
