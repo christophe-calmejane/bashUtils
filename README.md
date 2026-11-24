@@ -55,7 +55,8 @@ Script to generate a product installer.
 
 Script to generate and publish a NuGet meta-package (`<name>[-debug]`) referencing all the RID specific packages (`<name>[-debug]-<RID>`) already published on a NuGet source, so consumers don't need any RID logic.
 For each OS, the universal package (for example `osx`) is selected when published with the meta-package version, otherwise all the architecture specific ones (for example `osx-arm64` and `osx-x64`).
-The meta-package also keeps the layout of the native assets (subfolders of `runtimes/<RID>/native/`) in the consumer output folder.
+The meta-package also copies the native assets of the package best matching the consumer `RuntimeIdentifier` (or the machine running the build when none is set) to its output folder root, keeping their layout (subfolders of `runtimes/<RID>/native/`).
+The selected package is the one of the exact RID, else the universal one of the operating system, else the x64 one on Windows and macOS arm64 (which run x64 binaries through emulation).
 Run it from a folder whose `NuGet.config` files give access to the source, after all the RID specific packages of the version have been published (also available through `publish_nuget.sh -meta`).
 
 `Usage: publish_nuget_meta.sh -n <name> -s <source> [-k <apiKey>] [-c Debug|Release] [-v <version>] [-o <workFolder>] [-no-push] [-no-clean]`
