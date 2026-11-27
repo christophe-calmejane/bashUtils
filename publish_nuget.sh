@@ -1,6 +1,15 @@
 # Useful script to publish a NuGet package
+# Set selfFolderPath variable before calling this script to the absolute path of the calling script
+# Set nugetPackages array variable before calling this script to the names of the packages the calling script can publish (optional). When set, the -package option is mandatory and the extend_pn_fnc_select_package function must be defined.
+# The following functions can be defined before including this script:
+#   extend_pn_fnc_help() -> Called when -h is requested. No return value
+#   extend_pn_fnc_unhandled_arg() -> Called when an unhandled argument is found. Return the count of consumed args
+#   extend_pn_fnc_select_package() -> Called after parsing all arguments, with the name of the package selected with -package. No return value
+#     It must set either libName (the package contains the C# bindings of the library, see -l) or targetName (see -t), and can set packageName (see -n).
+#     It can append the CMake options required to build the package to the add_cmake_opt array (options passed after -- on the command line override them).
+#     It is also called with -meta (doMeta=1), in which case only the package names are used.
 
-PN_Version="1.5"
+PN_Version="1.6"
 
 echo "Publish Nuget version $PN_Version"
 echo ""
@@ -47,8 +56,10 @@ configType="$defaultConfigType"
 nugetSource=""
 nugetApiKey=""
 libName=""
-publishTargetName=""
+targetName=""
 packageName=""
+selectedPackage=""
+outputFolderSet=0
 metaVersion=""
 doMeta=0
 doRebuild=1
@@ -64,18 +75,29 @@ do
 			echo "Everything passed after -- will be passed directly to the gen_cmake command"
 			echo "Available options:"
 			echo " -h -> Display this help"
-			echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
+			if [ ${#nugetPackages[@]} -gt 0 ]; then
+				echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder}_<package name>)"
+			else
+				echo " -o <folder> -> Output folder (Default: ${defaultOutputFolder})"
+			fi
 			echo " -c <config> -> Configuration type (Default: ${defaultConfigType})"
 			echo " -s <source> -> NuGet source (Mandatory)"
 			echo " -k <apiKey> -> NuGet API key (Optional if credentials are set in the NuGet.config file)"
-			echo " -l <libName> -> C# library name (Mandatory unless -t is used)"
-			echo " -t <target> -> CMake NuGet push target (Mandatory unless -l is used)"
-			echo " -n <packageName> -> Base name of the published packages, used by -meta (Default: the -l value)"
+			if [ ${#nugetPackages[@]} -gt 0 ]; then
+				echo " -package <name> -> Package to publish (Mandatory): ${nugetPackages[*]}"
+			else
+				echo " -l <libName> -> C# library name, publishing the C# bindings of the library (Mandatory unless -t is used)"
+				echo " -t <target> -> CMake target whose NuGet package is published, using its '<target>-nuget-push' target (Mandatory unless -l is used)"
+				echo " -n <packageName> -> Base name of the published packages, used by -meta (Default: the -l or -t value)"
+			fi
 			echo " -meta -> Don't build anything, generate and publish the meta-package referencing all the RID specific packages already published on the source (see publish_nuget_meta.sh)"
 			echo " -v <version> -> Version of the meta-package, only used with -meta (Default: highest version found)"
 			echo " -arch <arch> -> Architecture to build (Default: x64 on Windows, all archs on macOS, x64 on Linux)"
 			echo " -no-clean -> Don't remove temp build folder [Default=clean on successful build]"
 			echo " -no-rebuild -> Don't rebuild the whole solution [Default=rebuild everything]"
+			if [[ $(type -t extend_pn_fnc_help) == function ]]; then
+				extend_pn_fnc_help
+			fi
 			exit 3
 			;;
 		-o)
@@ -85,6 +107,7 @@ do
 				exit 4
 			fi
 			outputFolder="$1"
+			outputFolderSet=1
 			;;
 		-c)
 			shift
@@ -124,7 +147,7 @@ do
 				echo "ERROR: Missing parameter for -t option, see help (-h)"
 				exit 4
 			fi
-			publishTargetName="$1"
+			targetName="$1"
 			;;
 		-n)
 			shift
@@ -133,6 +156,14 @@ do
 				exit 4
 			fi
 			packageName="$1"
+			;;
+		-package)
+			shift
+			if [ $# -lt 1 ]; then
+				echo "ERROR: Missing parameter for -package option, see help (-h)"
+				exit 4
+			fi
+			selectedPackage="$1"
 			;;
 		-meta)
 			doMeta=1
@@ -174,12 +205,54 @@ do
 			break
 			;;
 		*)
-			echo "ERROR: Unknown option '$1' (use -h for help)"
-			exit 4
+			consumed_args=0
+			if [[ $(type -t extend_pn_fnc_unhandled_arg) == function ]]; then
+				extend_pn_fnc_unhandled_arg "$@"
+				consumed_args=$?
+				for (( i=1; i<$consumed_args; i++ )); do
+					shift
+				done
+			fi
+			if [ $consumed_args -eq 0 ]; then
+				echo "ERROR: Unknown option '$1' (use -h for help)"
+				exit 4
+			fi
 			;;
 	esac
 	shift
 done
+
+# Let the calling script configure the selected package
+if [ ${#nugetPackages[@]} -gt 0 ]; then
+	if [ -z "$selectedPackage" ]; then
+		echo "Package to publish is mandatory, please provide it using -package option (${nugetPackages[*]})."
+		exit 1
+	fi
+	if [[ " ${nugetPackages[*]} " != *" ${selectedPackage} "* ]]; then
+		echo "Unknown package '${selectedPackage}', must be one of: ${nugetPackages[*]}"
+		exit 1
+	fi
+	if [ -n "$libName" ] || [ -n "$targetName" ] || [ -n "$packageName" ]; then
+		echo "Options -l, -t and -n cannot be used with -package."
+		exit 1
+	fi
+	if [[ $(type -t extend_pn_fnc_select_package) != function ]]; then
+		echo "ERROR: extend_pn_fnc_select_package function must be defined when nugetPackages is set."
+		exit 1
+	fi
+	# Options passed on the command line must come last to override the package ones
+	declare -a bu_pn_commandLineCmakeOpt=("${add_cmake_opt[@]}")
+	add_cmake_opt=()
+	extend_pn_fnc_select_package "$selectedPackage"
+	add_cmake_opt+=("${bu_pn_commandLineCmakeOpt[@]}")
+	# Use a dedicated output folder for each package, so they can be built side by side
+	if [ $outputFolderSet -eq 0 ]; then
+		outputFolder="${defaultOutputFolder}_${selectedPackage}"
+	fi
+elif [ -n "$selectedPackage" ]; then
+	echo "Option -package is not supported, no package list (nugetPackages) defined by the calling script."
+	exit 1
+fi
 
 # Error if the nugetSource is empty
 if [ -z "$nugetSource" ]; then
@@ -188,27 +261,28 @@ if [ -z "$nugetSource" ]; then
 fi
 
 # Require exactly one package target selection
-if [ -z "$libName" ] && [ -z "$publishTargetName" ]; then
-	echo "Library name (-l) or NuGet push target (-t) is mandatory."
+if [ -z "$libName" ] && [ -z "$targetName" ]; then
+	echo "Library name (-l) or CMake target (-t) is mandatory."
 	exit 1
 fi
-if [ -n "$libName" ] && [ -n "$publishTargetName" ]; then
+if [ -n "$libName" ] && [ -n "$targetName" ]; then
 	echo "Options -l and -t are mutually exclusive."
 	exit 1
 fi
-if [ -z "$publishTargetName" ]; then
-	publishTargetName=${libName}-csharp-nuget-push
+if [ -n "$libName" ]; then
+	publishTargetName="${libName}-csharp-nuget-push"
+	if [ -z "$packageName" ]; then
+		packageName="$libName"
+	fi
+else
+	publishTargetName="${targetName}-nuget-push"
+	if [ -z "$packageName" ]; then
+		packageName="$targetName"
+	fi
 fi
 
 # Meta-package mode: nothing to build, delegate to the dedicated script (run from the caller folder so its NuGet.config files are used)
 if [ $doMeta -eq 1 ]; then
-	if [ -z "$packageName" ]; then
-		packageName="$libName"
-	fi
-	if [ -z "$packageName" ]; then
-		echo "Package name (-n) is mandatory with -meta when -t is used."
-		exit 1
-	fi
 	declare -a metaParams=("-n" "$packageName" "-s" "$nugetSource" "-c" "$configType" "-o" "${bu_pn_callerFolderPath}${outputFolder}")
 	if [ -n "$nugetApiKey" ]; then
 		metaParams+=("-k" "$nugetApiKey")
